@@ -29,7 +29,12 @@ app.add_middleware(SessionMiddleware, secret_key="cambia-esto-por-una-clave-larg
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
-supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+supabase = None
+if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
+    supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+else:
+    print("⚠️ SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY no están configuradas en el entorno.")
 
 BUCKET = "contratos"
 
@@ -376,6 +381,13 @@ async def subir_pdf(request: Request, file: UploadFile = File(...)):
     user = usuario_actual(request)
     if not user:
         return RedirectResponse(url="/login", status_code=303)
+
+    if supabase is None:
+        return templates.TemplateResponse("respuesta.html", {
+            "request": request,
+            "pregunta": "Error de configuración",
+            "respuesta": "Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en Render (Environment)."
+        })
 
     empresa = get_empresa(user) or "Mi empresa"
     empresa_slug = re.sub(r"[^a-zA-Z0-9_-]+", "_", empresa).strip("_")
