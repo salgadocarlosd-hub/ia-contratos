@@ -6,9 +6,6 @@ from starlette.middleware.sessions import SessionMiddleware
 from pathlib import Path
 from pypdf import PdfReader
 
-import pytesseract
-from pdf2image import convert_from_path
-
 import re, json, os
 from urllib.parse import quote
 import logging
@@ -180,6 +177,9 @@ def extraer_texto_pdf(ruta_pdf):
             texto += pagina.extract_text() or ""
 
         if len(texto.strip()) < 50:
+            import pytesseract
+            from pdf2image import convert_from_path
+
             paginas = convert_from_path(ruta_pdf)
             texto = ""
             for pagina in paginas:
