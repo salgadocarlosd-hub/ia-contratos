@@ -4,7 +4,6 @@
   <title>Configuración</title>
 </head>
 <body>
-
   <p><a href="/">Volver</a> | <a href="/logout">Salir</a></p>
   <h1>Configuración</h1>
 
@@ -17,12 +16,15 @@
     <label>Nombre de la empresa</label><br>
     <input name="empresa" value="{{ empresa or '' }}" style="width:320px;"><br><br>
 
+    <label>Código para invitar usuarios</label><br>
+    <input value="{{ codigo or '' }}" style="width:320px;" readonly><br>
+    <small>Copia este código y pásaselo a tu equipo para unirse a tu empresa.</small><br><br>
+
     <label>Email para recibir alertas</label><br>
     <input name="email" value="{{ email or '' }}" style="width:320px;"><br><br>
 
     <button type="submit">Guardar</button>
 
   </form>
-
 </body>
 </html>
