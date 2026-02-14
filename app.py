@@ -155,7 +155,14 @@ def set_empresa(username: str, empresa: str):
 
 def get_rol(username: str) -> str:
     cfg = cargar_configs()
-    return (cfg.get(username, {}).get("rol") or "miembro").strip().lower()
+    rol = cfg.get(username, {}).get("rol")
+
+    if not rol:
+        # Si no tiene rol definido, lo consideramos admin por defecto
+        set_rol(username, "admin")
+        return "admin"
+
+    return rol.strip().lower()
 
 
 def set_rol(username: str, rol: str):
@@ -447,6 +454,7 @@ def dashboard(request: Request):
         mensaje = None
 
     empresa = get_empresa(user) or "Mi empresa"
+    rol = get_rol(user)
 
     if supabase is None:
         return templates.TemplateResponse("dashboard.html", {
@@ -454,6 +462,7 @@ def dashboard(request: Request):
             "contratos": [],
             "ultimos": [],
             "user": user,
+            "rol": rol,
             "mensaje": "⚠️ Supabase no configurado."
         })
 
@@ -508,6 +517,7 @@ def dashboard(request: Request):
         "contratos": contratos,
         "ultimos": ultimos,
         "user": user,
+        "rol": rol,
         "mensaje": mensaje
     })
 
