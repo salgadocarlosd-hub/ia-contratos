@@ -15,6 +15,10 @@
     <p style="color:red;">{{ error }}</p>
   {% endif %}
 
+  {% if error %}
+    <div class="msg">{{ error }}</div>
+  {% endif %}
+
   <form action="/config" method="post">
 
     <label>Nombre de la empresa</label><br>

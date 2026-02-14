@@ -814,6 +814,7 @@ def config_get(request: Request):
 
     empresa = get_empresa(user)
     codigo = get_empresa_codigo(user)
+    rol = get_rol(user)
 
     if empresa and not codigo:
         codigo = generar_codigo_empresa()
@@ -824,6 +825,7 @@ def config_get(request: Request):
         "empresa": empresa,
         "codigo": codigo,
         "email": get_email_alertas(user),
+        "rol": rol,
         "ok": False
     })
 
@@ -836,18 +838,24 @@ def config_post(request: Request, email: str = Form(""), empresa: str = Form("")
 
     set_email_alertas(user, email)
 
+    rol = get_rol(user)
+
     # Solo admin puede cambiar/definir empresa
-    if empresa.strip():
-        if get_rol(user) != "admin":
+    empresa = (empresa or "").strip()
+    if empresa:
+        if rol != "admin":
+            # No cambiar empresa si no es admin
             return templates.TemplateResponse("config.html", {
                 "request": request,
                 "codigo": get_empresa_codigo(user),
                 "email": email,
                 "empresa": get_empresa(user),
+                "rol": rol,
                 "ok": False,
                 "error": "Solo un admin puede cambiar la empresa."
             })
         set_empresa(user, empresa)
+
 
 
     codigo = get_empresa_codigo(user)
@@ -860,7 +868,9 @@ def config_post(request: Request, email: str = Form(""), empresa: str = Form("")
         "codigo": get_empresa_codigo(user),
         "email": email,
         "empresa": empresa,
-        "ok": True
+        "rol": rol,
+        "ok": True,
+        "error": none
     })
 
 
