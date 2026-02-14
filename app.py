@@ -254,7 +254,7 @@ def dashboard(request: Request):
 async def subir_pdf(request: Request, file: UploadFile = File(...)):
     user = usuario_actual(request)
     if not user:
-        return RedirectResponse(url="/?ok=1", status_code=303)
+        return RedirectResponse(url="/login", status_code=303)
 
     carpeta_usuario = CARPETA_DOCS / user
     carpeta_usuario.mkdir(parents=True, exist_ok=True)
@@ -284,12 +284,9 @@ async def subir_pdf(request: Request, file: UploadFile = File(...)):
     })
     guardar_registro(registro)
 
-    return {
-        "mensaje": "PDF subido y procesado correctamente",
-        "owner": user,
-        "fechas_detectadas": fechas,
-        "fecha_fin_detectada": fecha_fin
-    }
+    # ✅ después de subir, volver al panel
+    return RedirectResponse(url="/?ok=1", status_code=303)
+
 
 
 # -----------------------------
