@@ -56,7 +56,6 @@ CARPETA_DOCS.mkdir(exist_ok=True)
 
 USUARIOS = Path("usuarios.json")
 CONFIGS = Path("configs.json")
-REGISTRO = Path("registro_contratos.json")
 
 
 # -----------------------------
@@ -76,16 +75,6 @@ def normalizar_password(p: str) -> str:
     p = str(p).replace("\r", "").replace("\n", "").strip()
     b = p.encode("utf-8")[:72]
     return b.decode("utf-8", errors="ignore")
-
-
-def cargar_usuarios():
-    if USUARIOS.exists():
-        return json.loads(USUARIOS.read_text(encoding="utf-8"))
-    return []
-
-
-def guardar_usuarios(data):
-    USUARIOS.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def crear_usuario(username: str, password: str):
@@ -147,21 +136,26 @@ def set_empresa(username: str, empresa: str):
     cfg.setdefault(username, {})["empresa"] = empresa.strip()
     guardar_configs(cfg)
 
+
 import secrets
 import string
+
 
 def get_empresa_codigo(username: str):
     cfg = cargar_configs()
     return cfg.get(username, {}).get("empresa_codigo", "")
+
 
 def set_empresa_codigo(username: str, codigo: str):
     cfg = cargar_configs()
     cfg.setdefault(username, {})["empresa_codigo"] = codigo.strip().upper()
     guardar_configs(cfg)
 
+
 def generar_codigo_empresa():
     alfabeto = string.ascii_uppercase + string.digits
     return "".join(secrets.choice(alfabeto) for _ in range(6))
+
 
 def buscar_empresa_por_codigo(codigo: str):
     cfg = cargar_configs()
@@ -174,16 +168,6 @@ def buscar_empresa_por_codigo(codigo: str):
 # -----------------------------
 # Helpers: registro contratos
 # -----------------------------
-def cargar_registro():
-    if REGISTRO.exists():
-        return json.loads(REGISTRO.read_text(encoding="utf-8"))
-    return []
-
-
-def guardar_registro(data):
-    REGISTRO.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-
-
 def extraer_texto_pdf(ruta_pdf):
     """
     Lee PDF normal. Si sale casi vacío, intenta OCR (PDF escaneado).
@@ -243,6 +227,7 @@ def extraer_fecha_fin(texto: str):
 
     return None
 
+
 def extraer_fechas(texto: str):
     patrones = r"\b(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})\b"
     halladas = re.findall(patrones, texto)
@@ -273,6 +258,7 @@ def clasificar_contrato(texto: str):
 
     return "otro"
 
+
 def obtener_contratos_supabase(empresa: str, owner: str | None = None, limit: int = 200):
     """
     Devuelve contratos desde Supabase (tabla contratos) para una empresa.
@@ -295,6 +281,56 @@ def obtener_contratos_supabase(empresa: str, owner: str | None = None, limit: in
 
     res = q.execute()
     return res.data or []
+
+
+def obtener_alertas_supabase(empresa: str, dias: int = 30, owner: str | None = None, limit: int = 500):
+    """
+    Devuelve contratos con fecha_fin <= hoy + dias desde Supabase.
+    """
+    if supabase is None:
+        return []
+
+    hoy = datetime.now().date()
+    limite = hoy + timedelta(days=dias)
+
+    # Traemos contratos con fecha_fin no nula (filtraremos en Python por seguridad)
+    q = (
+        supabase
+        .table("contratos")
+        .select("archivo_pdf,fecha_fin,tipo,owner,creado_en,storage_path")
+        .eq("empresa", empresa)
+        .order("fecha_fin", desc=False)
+        .limit(limit)
+    )
+
+    if owner:
+        q = q.eq("owner", owner)
+
+    res = q.execute()
+    items = res.data or []
+
+    alertas = []
+    for it in items:
+        fecha = it.get("fecha_fin")
+        if not fecha:
+            continue
+        try:
+            fin = datetime.fromisoformat(str(fecha)).date()
+        except:
+            continue
+
+        if fin <= limite:
+            alertas.append({
+                "owner": it.get("owner"),
+                "archivo_pdf": it.get("archivo_pdf"),
+                "tipo": it.get("tipo", "otro"),
+                "vence_el": str(fecha),
+                "dias_restantes": (fin - hoy).days,
+                "storage_path": it.get("storage_path", "")
+            })
+
+    alertas.sort(key=lambda x: x["vence_el"])
+    return alertas
 
 
 # -----------------------------
@@ -515,78 +551,57 @@ async def subir_pdf(request: Request, file: UploadFile = File(...)):
 # Consultas
 # -----------------------------
 @app.get("/vencen_en/")
-def vencen_en(dias: int = 30, owner: str | None = None):
-    limite = (datetime.now().date() + timedelta(days=dias))
+def vencen_en(request: Request, dias: int = 30):
+    user = usuario_actual(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
 
-    registro = cargar_registro()
+    if supabase is None:
+        return {
+            "ok": False,
+            "error": "Supabase no disponible",
+            "resultados": []
+        }
+
+    empresa = get_empresa(user) or "Mi empresa"
+
+    # Solo devuelve del usuario actual (seguridad)
+    alertas = obtener_alertas_supabase(empresa=empresa, dias=dias, owner=user)
+
     resultados = []
-
-    for item in registro:
-        if owner and item.get("owner") != owner:
-            continue
-
-        fechas = item.get("fechas_detectadas", [])
-        if not fechas:
-            continue
-
-        posible_fin = item.get("fecha_fin_detectada") or max(fechas)
-
-        try:
-            fin_date = datetime.fromisoformat(posible_fin).date()
-        except Exception:
-            continue
-
-        if fin_date <= limite:
-            resultados.append({
-                "owner": item.get("owner"),
-                "archivo_pdf": item.get("archivo_pdf"),
-                "posible_vencimiento": posible_fin,
-                "fechas_detectadas": fechas
-            })
-
-    resultados.sort(key=lambda x: x["posible_vencimiento"])
+    for a in alertas:
+        resultados.append({
+            "archivo_pdf": a["archivo_pdf"],
+            "tipo": a.get("tipo", "otro"),
+            "vence_el": a["vence_el"],
+            "dias_restantes": a["dias_restantes"]
+        })
 
     return {
+        "ok": True,
         "hoy": datetime.now().date().isoformat(),
-        "limite": limite.isoformat(),
         "dias": dias,
         "resultados": resultados
     }
 
 
 @app.get("/alertas_vencimiento/")
-def alertas_vencimiento(dias: int = 30, owner: str | None = None):
-    limite = (datetime.now().date() + timedelta(days=dias))
+def alertas_vencimiento(request: Request, dias: int = 30):
+    user = usuario_actual(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
 
-    registro = cargar_registro()
-    alertas = []
+    if supabase is None:
+        return {"ok": False, "error": "Supabase no disponible", "alertas": []}
 
-    for item in registro:
-        if owner and item.get("owner") != owner:
-            continue
+    empresa = get_empresa(user) or "Mi empresa"
 
-        fecha_fin = item.get("fecha_fin_detectada")
-        if not fecha_fin:
-            continue
-
-        try:
-            fin_date = datetime.fromisoformat(fecha_fin).date()
-        except:
-            continue
-
-        if fin_date <= limite:
-            alertas.append({
-                "owner": item.get("owner"),
-                "archivo_pdf": item.get("archivo_pdf"),
-                "vence_el": fecha_fin,
-                "dias_restantes": (fin_date - datetime.now().date()).days
-            })
-
-    alertas.sort(key=lambda x: x["vence_el"])
+    alertas = obtener_alertas_supabase(empresa=empresa, dias=dias, owner=user)
 
     return {
-        "alertas": alertas,
-        "limite": limite.isoformat()
+        "ok": True,
+        "dias": dias,
+        "alertas": alertas
     }
 
 
@@ -741,45 +756,37 @@ def enviar_email(destino, asunto, mensaje):
 
 
 @app.get("/enviar_alertas/")
-def enviar_alertas(dias: int = 30):
-    registro = cargar_registro()
+def enviar_alertas(request: Request, dias: int = 30):
+    user = usuario_actual(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
 
-    por_usuario = {}
-    for item in registro:
-        owner = item.get("owner")
-        if owner:
-            por_usuario.setdefault(owner, []).append(item)
+    if supabase is None:
+        return {"ok": False, "error": "Supabase no disponible", "enviados": []}
 
-    enviados = []
+    empresa = get_empresa(user) or "Mi empresa"
+    destino = get_email_alertas(user)
 
-    for owner, items in por_usuario.items():
-        destino = get_email_alertas(owner)
-        if not destino:
-            continue
+    if not destino:
+        return {"ok": False, "error": "No tienes email configurado en /config", "enviados": []}
 
-        alertas = []
-        limite = (datetime.now().date() + timedelta(days=dias))
+    alertas = obtener_alertas_supabase(empresa=empresa, dias=dias, owner=user)
 
-        for item in items:
-            fecha_fin = item.get("fecha_fin_detectada")
-            if not fecha_fin:
-                continue
-            try:
-                fin_date = datetime.fromisoformat(fecha_fin).date()
-            except:
-                continue
-            if fin_date <= limite:
-                alertas.append((item.get("archivo_pdf"), fecha_fin, (fin_date - datetime.now().date()).days))
+    if not alertas:
+        return {"ok": True, "mensaje": "No hay contratos por vencer", "enviados": []}
 
-        if not alertas:
-            continue
+    asunto = f"Alertas de contratos (<= {dias} días)"
+    cuerpo = "Contratos próximos a vencer:\n\n" + "\n".join(
+        [f"- {a['archivo_pdf']} ({a.get('tipo','otro')}) vence el {a['vence_el']} (quedan {a['dias_restantes']} días)"
+         for a in alertas]
+    )
 
-        asunto = f"Alertas de contratos (<= {dias} días)"
-        cuerpo = "Contratos próximos a vencer:\n\n" + "\n".join(
-            [f"- {a[0]} vence el {a[1]} (quedan {a[2]} días)" for a in alertas]
-        )
-
+    try:
         enviar_email(destino, asunto, cuerpo)
-        enviados.append({"owner": owner, "destino": destino, "num_alertas": len(alertas)})
+    except Exception as e:
+        return {"ok": False, "error": f"Fallo enviando email: {str(e)[:180]}", "enviados": []}
 
-    return {"enviados": enviados}
+    return {
+        "ok": True,
+        "enviados": [{"owner": user, "destino": destino, "num_alertas": len(alertas)}]
+    }
