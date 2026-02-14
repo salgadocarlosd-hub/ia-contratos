@@ -89,6 +89,7 @@
           {% for c in ultimos %}
             <li style="margin:6px 0;">
               <b>{{ c.get("archivo_pdf","") }}</b>
+              <span class="muted"> (path={{ c.get("storage_path","VACIO") }})</span>
               — tipo: {{ c.get("tipo","otro") }}
               {% if c.get("fecha_fin") %} — fin: {{ c.get("fecha_fin") }}{% endif %}
               {% if c.get("owner") %} — subido por: {{ c.get("owner") }}{% endif %}

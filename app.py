@@ -15,9 +15,11 @@ from dateutil import parser
 from passlib.context import CryptContext
 import yagmail
 
-import os
 from io import BytesIO
 from supabase import create_client
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 # -----------------------------
@@ -422,7 +424,7 @@ def dashboard(request: Request):
     res = (
         supabase
         .table("contratos")
-        .select("archivo_pdf,fecha_fin,tipo,creado_en,owner")
+        .select("archivo_pdf,fecha_fin,tipo,creado_en,owner,storage_path")
         .eq("empresa", empresa)
         .order("creado_en", desc=True)
         .limit(50)
@@ -437,7 +439,8 @@ def dashboard(request: Request):
             "archivo_pdf": it.get("archivo_pdf"),
             "tipo": it.get("tipo", "otro"),
             "fecha_fin": str(it.get("fecha_fin") or ""),
-            "owner": it.get("owner", "")
+            "owner": it.get("owner", ""),
+            "storage_path": it.get("storage_path", "")
         })
 
     hoy = datetime.now().date()
@@ -458,7 +461,8 @@ def dashboard(request: Request):
                 "archivo_pdf": it.get("archivo_pdf"),
                 "tipo": it.get("tipo", "otro"),
                 "vence_el": str(fecha_fin),
-                "dias_restantes": (fin_date - hoy).days
+                "dias_restantes": (fin_date - hoy).days,
+                "storage_path": it.get("storage_path", "")
             })
 
     contratos.sort(key=lambda x: x["vence_el"])
@@ -545,6 +549,44 @@ async def subir_pdf(request: Request, file: UploadFile = File(...)):
         logger.exception("Error en subir_pdf")
         return RedirectResponse(url="/?ok=0&err=" + quote(str(e)[:160]), status_code=303)
 
+
+@app.get("/descargar/")
+def descargar_pdf(request: Request, path: str):
+    user = usuario_actual(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
+
+    if supabase is None:
+        return RedirectResponse(url="/?ok=0&err=" + quote("Supabase no disponible"), status_code=303)
+
+    empresa = get_empresa(user) or "Mi empresa"
+
+    # Seguridad: comprobar que ese storage_path pertenece a este usuario/empresa
+    try:
+        res = (
+            supabase
+            .table("contratos")
+            .select("storage_path")
+            .eq("empresa", empresa)
+            .eq("owner", user)
+            .eq("storage_path", path)
+            .limit(1)
+            .execute()
+        )
+        if not (res.data and len(res.data) > 0):
+            return RedirectResponse(url="/?ok=0&err=" + quote("No autorizado"), status_code=303)
+    except Exception as e:
+        return RedirectResponse(url="/?ok=0&err=" + quote(str(e)[:120]), status_code=303)
+
+    # Generar URL firmada (10 minutos)
+    try:
+        signed = supabase.storage.from_(BUCKET).create_signed_url(path, 60 * 10)
+        url = signed.get("signedURL") if isinstance(signed, dict) else None
+        if not url:
+            return RedirectResponse(url="/?ok=0&err=" + quote("No se pudo generar link"), status_code=303)
+        return RedirectResponse(url=url, status_code=302)
+    except Exception as e:
+        return RedirectResponse(url="/?ok=0&err=" + quote(str(e)[:160]), status_code=303)
 
 
 # -----------------------------
