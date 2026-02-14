@@ -77,6 +77,7 @@
           <thead>
             <tr>
               <th>Archivo</th>
+              <th>Tipo</th>
               <th>Vence el</th>
               <th>Días restantes</th>
               <th>Estado</th>
@@ -87,9 +88,9 @@
               {% set dias = c.get("dias_restantes", 999999) %}
               <tr>
                 <td><b>{{ c.get("archivo_pdf","") }}</b></td>
+                <td>{{ c.get("tipo","otro") }}</td>
                 <td>{{ c.get("vence_el","") }}</td>
                 <td>{{ dias }}</td>
-                <td>
                   {% if dias <= 7 %}
                     <span class="pill pill-danger">Urgente</span>
                   {% elif dias <= 30 %}
