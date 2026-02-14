@@ -29,7 +29,14 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("contractai")
 
 app = FastAPI()
-app.add_middleware(SessionMiddleware, secret_key="cambia-esto-por-una-clave-larga")
+SESSION_SECRET = os.environ.get("SESSION_SECRET", "dev-secret")
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SESSION_SECRET,
+    https_only=True,       # solo cookies por HTTPS
+    same_site="lax"        # protección CSRF básica
+)
 
 SUPABASE_URL = (os.environ.get("SUPABASE_URL") or "").strip()
 SUPABASE_SERVICE_ROLE_KEY = (os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
