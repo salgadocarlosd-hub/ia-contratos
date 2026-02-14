@@ -10,3 +10,4 @@ itsdangerous
 yagmail
 requests
 python-multipart
+supabase
