@@ -515,23 +515,24 @@ async def subir_pdf(request: Request, file: UploadFile = File(...)):
 
         empresa = get_empresa(user) or "Mi empresa"
 
-# Evitar duplicado por nombre para este usuario
-res_dup = (
-    supabase
-    .table("contratos")
-    .select("id")
-    .eq("empresa", empresa)
-    .eq("owner", user)
-    .eq("archivo_pdf", file.filename)
-    .limit(1)
-    .execute()
-)
+        # Evitar duplicado por nombre para este usuario
+        res_dup = (
+            supabase
+            .table("contratos")
+            .select("archivo_pdf")
+            .eq("empresa", empresa)
+            .eq("owner", user)
+            .eq("archivo_pdf", file.filename)
+            .limit(1)
+            .execute()
+        )
 
-if res_dup.data:
-    return RedirectResponse(
-        url="/?ok=0&err=" + quote("Ya existe un contrato con ese nombre"),
-        status_code=303
-    )
+        if res_dup.data:
+            return RedirectResponse(
+                url="/?ok=0&err=" + quote("Ya existe un contrato con ese nombre"),
+                status_code=303
+            )
+
 
         empresa_slug = re.sub(r"[^a-zA-Z0-9_-]+", "_", empresa).strip("_")
         user_slug = re.sub(r"[^a-zA-Z0-9_-]+", "_", user).strip("_")
