@@ -80,6 +80,26 @@
       </form>
     </div>
 
+    <!-- ✅ NUEVO BLOQUE: Últimos contratos -->
+    <div class="card">
+      <h2 style="margin:0 0 10px;">Últimos contratos subidos</h2>
+
+      {% if ultimos and ultimos|length > 0 %}
+        <ul style="margin:0; padding-left:18px;">
+          {% for c in ultimos %}
+            <li style="margin:6px 0;">
+              <b>{{ c.get("archivo_pdf","") }}</b>
+              — tipo: {{ c.get("tipo","otro") }}
+              {% if c.get("fecha_fin") %} — fin: {{ c.get("fecha_fin") }}{% endif %}
+              {% if c.get("owner") %} — subido por: {{ c.get("owner") }}{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted" style="margin:0;">Aún no hay contratos subidos en esta empresa.</p>
+      {% endif %}
+    </div>
+
     <div class="card">
       <h2 style="margin:0 0 10px;">Listado</h2>
 
@@ -102,6 +122,7 @@
                 <td>{{ c.get("tipo","otro") }}</td>
                 <td>{{ c.get("vence_el","") }}</td>
                 <td>{{ dias }}</td>
+                <td>
                   {% if dias <= 7 %}
                     <span class="pill pill-danger">Urgente</span>
                   {% elif dias <= 30 %}
