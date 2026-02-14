@@ -51,6 +51,7 @@ if SUPABASE_URL and not SUPABASE_URL.startswith("https://"):
     print("⚠️ SUPABASE_URL no empieza por https://")
 
 BUCKET = "contratos"
+MAX_PDF_SIZE = 20 * 1024 * 1024  # 20MB
 
 templates = Jinja2Templates(directory="templates")
 
@@ -518,6 +519,13 @@ async def subir_pdf(request: Request, file: UploadFile = File(...)):
 
         # Leer bytes
         pdf_bytes = await file.read()
+
+        if len(pdf_bytes) > MAX_PDF_SIZE:
+            return RedirectResponse(
+               url="/?ok=0&err=" + quote("El archivo supera el límite de 20MB"),
+               status_code=303
+            )
+
         if not pdf_bytes:
             return RedirectResponse(url="/?ok=0&err=" + quote("Archivo vacío"), status_code=303)
 
