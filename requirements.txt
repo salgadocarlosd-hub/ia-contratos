@@ -9,3 +9,4 @@ jinja2
 itsdangerous
 yagmail
 requests
+python-multipart
