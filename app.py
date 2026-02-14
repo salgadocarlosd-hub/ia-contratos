@@ -233,13 +233,17 @@ def dashboard(request: Request):
     if not user:
         return RedirectResponse(url="/login", status_code=303)
 
-    data = alertas_vencimiento(30, owner=user)  # filtrado real por usuario
+    ok = request.query_params.get("ok")
+    mensaje = "Contrato subido y procesado ✅" if ok == "1" else None
+
+    data = alertas_vencimiento(30, owner=user)
     contratos = data["alertas"]
 
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "contratos": contratos,
-        "user": user
+        "user": user,
+        "mensaje": mensaje
     })
 
 
@@ -250,7 +254,7 @@ def dashboard(request: Request):
 async def subir_pdf(request: Request, file: UploadFile = File(...)):
     user = usuario_actual(request)
     if not user:
-        return RedirectResponse(url="/login", status_code=303)
+        return RedirectResponse(url="/?ok=1", status_code=303)
 
     carpeta_usuario = CARPETA_DOCS / user
     carpeta_usuario.mkdir(parents=True, exist_ok=True)
