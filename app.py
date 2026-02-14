@@ -10,6 +10,8 @@ import pytesseract
 from pdf2image import convert_from_path
 
 import re, json, os
+from urllib.parse import quote
+import logging
 from datetime import datetime, timedelta
 from dateutil import parser
 
@@ -24,6 +26,9 @@ from supabase import create_client
 # -----------------------------
 # App + templates + session
 # -----------------------------
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("contractai")
+
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key="cambia-esto-por-una-clave-larga")
 
@@ -335,7 +340,15 @@ def dashboard(request: Request):
         return RedirectResponse(url="/login", status_code=303)
 
     ok = request.query_params.get("ok")
-    mensaje = "Contrato subido y procesado ✅" if ok == "1" else None
+err = request.query_params.get("err")
+
+if err:
+    mensaje = f"❌ Error: {err}"
+elif ok == "1":
+    mensaje = "Contrato subido y procesado ✅"
+else:
+    mensaje = None
+
 
     empresa = get_empresa(user) or "Mi empresa"
 
@@ -343,20 +356,34 @@ def dashboard(request: Request):
         return templates.TemplateResponse("dashboard.html", {
             "request": request,
             "contratos": [],
+            "ultimos": [],
             "user": user,
             "mensaje": "⚠️ Supabase no está configurado en Render (Environment)."
         })
 
-    # Leer contratos de la empresa desde Supabase
+    # Traer contratos de la empresa (ordenados por fecha de creación)
     res = (
         supabase
         .table("contratos")
         .select("archivo_pdf,fecha_fin,tipo,creado_en,owner")
         .eq("empresa", empresa)
+        .order("creado_en", desc=True)
+        .limit(50)
         .execute()
     )
     items = res.data or []
 
+    # 1) Últimos contratos (sin filtro)
+    ultimos = []
+    for it in items[:10]:
+        ultimos.append({
+            "archivo_pdf": it.get("archivo_pdf"),
+            "tipo": it.get("tipo", "otro"),
+            "fecha_fin": str(it.get("fecha_fin") or ""),
+            "owner": it.get("owner", "")
+        })
+
+    # 2) Vencen pronto (30 días)
     hoy = datetime.now().date()
     limite = hoy + timedelta(days=30)
 
@@ -365,9 +392,7 @@ def dashboard(request: Request):
         fecha_fin = it.get("fecha_fin")
         if not fecha_fin:
             continue
-
         try:
-            # Supabase suele devolver "YYYY-MM-DD"
             fin_date = datetime.fromisoformat(str(fecha_fin)).date()
         except Exception:
             continue
@@ -384,7 +409,8 @@ def dashboard(request: Request):
 
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
-        "contratos": contratos,
+        "contratos": contratos,   # vencen pronto
+        "ultimos": ultimos,       # últimos subidos
         "user": user,
         "mensaje": mensaje
     })
@@ -400,45 +426,68 @@ async def subir_pdf(request: Request, file: UploadFile = File(...)):
         return RedirectResponse(url="/login", status_code=303)
 
     if supabase is None:
-        return templates.TemplateResponse("respuesta.html", {
-            "request": request,
-            "pregunta": "Error de configuración",
-            "respuesta": "Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en Render (Environment)."
-        })
+        return RedirectResponse(url="/?ok=0&err=" + quote("Supabase no configurado"), status_code=303)
 
-    empresa = get_empresa(user) or "Mi empresa"
-    empresa_slug = re.sub(r"[^a-zA-Z0-9_-]+", "_", empresa).strip("_")
-    user_slug = re.sub(r"[^a-zA-Z0-9_-]+", "_", user).strip("_")
+    try:
+        logger.info("Subida PDF iniciada user=%s file=%s", user, file.filename)
 
-    # Leer el PDF UNA vez (bytes)
-    pdf_bytes = await file.read()
+        # Validación: solo PDF
+        ct = (file.content_type or "").lower()
+        if "pdf" not in ct and not (file.filename or "").lower().endswith(".pdf"):
+            return RedirectResponse(url="/?ok=0&err=" + quote("Solo se permiten archivos PDF"), status_code=303)
 
-    # 1) Subir a Supabase Storage
-    storage_path = f"{empresa_slug}/{user_slug}/{file.filename}"
-    supabase.storage.from_(BUCKET).upload(
-        path=storage_path,
-        file=pdf_bytes,
-        file_options={"content-type": file.content_type or "application/pdf"}
-    )
+        empresa = get_empresa(user) or "Mi empresa"
+        empresa_slug = re.sub(r"[^a-zA-Z0-9_-]+", "_", empresa).strip("_")
+        user_slug = re.sub(r"[^a-zA-Z0-9_-]+", "_", user).strip("_")
 
-    # 2) Extraer texto (sin disco)
-    texto = extraer_texto_pdf_bytes(pdf_bytes)
+        # Leer bytes
+        pdf_bytes = await file.read()
+        if not pdf_bytes:
+            return RedirectResponse(url="/?ok=0&err=" + quote("Archivo vacío"), status_code=303)
 
-    # 3) Sacar datos
-    fecha_fin = extraer_fecha_fin(texto)
-    tipo_contrato = clasificar_contrato(texto)
+        # Ruta en Storage
+        storage_path = f"{empresa_slug}/{user_slug}/{file.filename}"
 
-    # 4) Guardar en Postgres (tabla contratos)
-    supabase.table("contratos").insert({
-        "empresa": empresa,
-        "owner": user,
-        "archivo_pdf": file.filename,
-        "storage_path": storage_path,
-        "fecha_fin": fecha_fin,
-        "tipo": tipo_contrato
-    }).execute()
+        # Subir a Supabase Storage
+        try:
+            supabase.storage.from_(BUCKET).upload(
+                path=storage_path,
+                file=pdf_bytes,
+                file_options={"content-type": file.content_type or "application/pdf"}
+            )
+        except Exception:
+            # Si existe o falla, renombrar con timestamp y reintentar
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            storage_path = f"{empresa_slug}/{user_slug}/{ts}_{file.filename}"
+            supabase.storage.from_(BUCKET).upload(
+                path=storage_path,
+                file=pdf_bytes,
+                file_options={"content-type": file.content_type or "application/pdf"}
+            )
 
-    return RedirectResponse(url="/?ok=1", status_code=303)
+        # Extraer texto
+        texto = extraer_texto_pdf_bytes(pdf_bytes)
+
+        # Extraer datos
+        fecha_fin = extraer_fecha_fin(texto)
+        tipo_contrato = clasificar_contrato(texto)
+
+        # Guardar en Postgres
+        supabase.table("contratos").insert({
+            "empresa": empresa,
+            "owner": user,
+            "archivo_pdf": file.filename,
+            "storage_path": storage_path,
+            "fecha_fin": fecha_fin,
+            "tipo": tipo_contrato
+        }).execute()
+
+        logger.info("Subida PDF OK user=%s storage_path=%s", user, storage_path)
+        return RedirectResponse(url="/?ok=1", status_code=303)
+
+    except Exception as e:
+        logger.exception("Error en subir_pdf")
+        return RedirectResponse(url="/?ok=0&err=" + quote(str(e)[:160]), status_code=303)
 
 
 
