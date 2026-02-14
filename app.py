@@ -273,6 +273,29 @@ def clasificar_contrato(texto: str):
 
     return "otro"
 
+def obtener_contratos_supabase(empresa: str, owner: str | None = None, limit: int = 200):
+    """
+    Devuelve contratos desde Supabase (tabla contratos) para una empresa.
+    Si owner se pasa, filtra por usuario.
+    """
+    if supabase is None:
+        return []
+
+    q = (
+        supabase
+        .table("contratos")
+        .select("archivo_pdf,fecha_fin,tipo,owner,creado_en,storage_path")
+        .eq("empresa", empresa)
+        .order("creado_en", desc=True)
+        .limit(limit)
+    )
+
+    if owner:
+        q = q.eq("owner", owner)
+
+    res = q.execute()
+    return res.data or []
+
 
 # -----------------------------
 # Auth pages
@@ -573,42 +596,73 @@ async def preguntar_contratos(request: Request, pregunta: str = Form(...)):
     if not user:
         return RedirectResponse(url="/login", status_code=303)
 
-    registro = cargar_registro()
-    contratos_usuario = [c for c in registro if c.get("owner") == user]
+    if supabase is None:
+        return templates.TemplateResponse("respuesta.html", {
+            "request": request,
+            "pregunta": pregunta,
+            "respuesta": "❌ Supabase no está disponible ahora mismo. Inténtalo de nuevo en unos minutos."
+        })
 
-    pregunta_l = pregunta.lower()
+    empresa = get_empresa(user) or "Mi empresa"
+
+    # Traer contratos del usuario desde Supabase
+    try:
+        items = obtener_contratos_supabase(empresa=empresa, owner=user, limit=300)
+    except Exception as e:
+        return templates.TemplateResponse("respuesta.html", {
+            "request": request,
+            "pregunta": pregunta,
+            "respuesta": f"❌ Error consultando Supabase: {str(e)[:180]}"
+        })
+
+    pregunta_l = (pregunta or "").lower()
     hoy = datetime.now().date()
 
-    # detectar "en X días"
+    # Detectar "en X días"
     dias = None
     m = re.search(r"(\d+)\s*d[ií]as", pregunta_l)
     if m:
-        dias = int(m.group(1))
+        try:
+            dias = int(m.group(1))
+        except:
+            dias = None
+
+    # Detectar tipo si el usuario escribe "alquiler", "seguro", etc.
+    tipos_validos = ["alquiler", "seguro", "servicios", "laboral", "préstamo", "prestamo", "otro"]
+    tipo_filtro = None
+    for t in tipos_validos:
+        if t in pregunta_l:
+            tipo_filtro = "préstamo" if t == "prestamo" else t
+            break
 
     resultados = []
 
-    for c in contratos_usuario:
-        fecha = c.get("fecha_fin_detectada")
+    for it in items:
+        fecha = it.get("fecha_fin")
         if not fecha:
             continue
 
-        fin = datetime.fromisoformat(fecha).date()
+        # fecha_fin suele venir como "YYYY-MM-DD"
+        try:
+            fin = datetime.fromisoformat(str(fecha)).date()
+        except:
+            continue
 
         incluir = True
 
-        if dias:
+        if dias is not None:
             incluir = fin <= (hoy + timedelta(days=dias))
 
-        if "alquiler" in pregunta_l:
-            incluir = incluir and c.get("tipo") == "alquiler"
+        if tipo_filtro:
+            incluir = incluir and (it.get("tipo") == tipo_filtro)
 
         if incluir:
             resultados.append(
-                f"{c.get('archivo_pdf')} ({c.get('tipo')}) vence el {fecha}"
+                f"{it.get('archivo_pdf')} ({it.get('tipo', 'otro')}) vence el {str(fecha)}"
             )
 
     if not resultados:
-        respuesta = "No encontré coincidencias."
+        respuesta = "No encontré coincidencias con esa pregunta."
     else:
         respuesta = "\n".join(resultados)
 
