@@ -15,24 +15,26 @@
     <p style="color:red;">{{ error }}</p>
   {% endif %}
 
-  {% if error %}
-    <div class="msg">{{ error }}</div>
-  {% endif %}
-
   <form action="/config" method="post">
 
-    <label>Nombre de la empresa</label><br>
-    <input name="empresa" value="{{ empresa or '' }}" style="width:320px;"><br><br>
+    {% if rol == "admin" %}
+      <label>Nombre de la empresa</label><br>
+      <input name="empresa" value="{{ empresa or '' }}" style="width:320px;"><br><br>
 
-    <label>Código para invitar usuarios</label><br>
-    <input value="{{ codigo or '' }}" style="width:320px;" readonly><br>
-    <small>Copia este código y pásaselo a tu equipo para unirse a tu empresa.</small><br><br>
+      <label>Código para invitar usuarios</label><br>
+      <input value="{{ codigo or '' }}" style="width:320px;" readonly><br>
+      <small>Copia este código y pásaselo a tu equipo para unirse a tu empresa.</small><br><br>
+    {% else %}
+      <p>Empresa: <b>{{ empresa }}</b></p>
+      <p style="color:#555;">Solo un admin puede cambiar la empresa y ver el código.</p>
+      <!-- Importante: no mandamos 'empresa' desde miembros -->
+    {% endif %}
 
     <label>Email para recibir alertas</label><br>
     <input name="email" value="{{ email or '' }}" style="width:320px;"><br><br>
 
     <button type="submit">Guardar</button>
 
-  </form>
+</form>
 </body>
 </html>
