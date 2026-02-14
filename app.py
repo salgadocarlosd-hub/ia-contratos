@@ -124,6 +124,29 @@ def set_empresa(username: str, empresa: str):
     cfg.setdefault(username, {})["empresa"] = empresa.strip()
     guardar_configs(cfg)
 
+import secrets
+import string
+
+def get_empresa_codigo(username: str):
+    cfg = cargar_configs()
+    return cfg.get(username, {}).get("empresa_codigo", "")
+
+def set_empresa_codigo(username: str, codigo: str):
+    cfg = cargar_configs()
+    cfg.setdefault(username, {})["empresa_codigo"] = codigo.strip().upper()
+    guardar_configs(cfg)
+
+def generar_codigo_empresa():
+    alfabeto = string.ascii_uppercase + string.digits
+    return "".join(secrets.choice(alfabeto) for _ in range(6))
+
+def buscar_empresa_por_codigo(codigo: str):
+    cfg = cargar_configs()
+    codigo = (codigo or "").strip().upper()
+    for user, data in cfg.items():
+        if data.get("empresa_codigo", "").upper() == codigo:
+            return data.get("empresa")
+    return None
 
 # -----------------------------
 # Helpers: registro contratos
@@ -235,14 +258,17 @@ def login_post(request: Request, username: str = Form(...), password: str = Form
 @app.get("/registro")
 def registro_get(request: Request):
     return templates.TemplateResponse("registro.html", {"request": request, "error": None})
-
+	
 
 @app.post("/registro")
-def registro_post(request: Request, username: str = Form(...), password: str = Form(...)):
+def registro_post(request: Request, username: str = Form(...), password: str = Form(...), codigo_empresa: str = Form("")):
     ok = crear_usuario(username, password)
     if not ok:
         return templates.TemplateResponse("registro.html", {"request": request, "error": "Ese usuario ya existe"})
     request.session["user"] = username
+    empresa_por_codigo = buscar_empresa_por_codigo(codigo_empresa)
+    if empresa_por_codigo:
+        set_empresa(username, empresa_por_codigo)
     return RedirectResponse(url="/", status_code=303)
 
 
@@ -264,8 +290,36 @@ def dashboard(request: Request):
     ok = request.query_params.get("ok")
     mensaje = "Contrato subido y procesado ✅" if ok == "1" else None
 
-    data = alertas_vencimiento(30, owner=user)
-    contratos = data["alertas"]
+    empresa = get_empresa(user) or "Mi empresa"
+
+    # Coger todos los contratos y filtrar por empresa
+    registro = cargar_registro()
+    hoy = datetime.now().date()
+    limite = hoy + timedelta(days=30)
+
+    contratos = []
+    for item in registro:
+        if item.get("empresa") != empresa:
+            continue
+
+        fecha_fin = item.get("fecha_fin_detectada")
+        if not fecha_fin:
+            continue
+
+        try:
+            fin_date = datetime.fromisoformat(fecha_fin).date()
+        except:
+            continue
+
+        if fin_date <= limite:
+            contratos.append({
+                "archivo_pdf": item.get("archivo_pdf"),
+                "tipo": item.get("tipo", "otro"),
+                "vence_el": fecha_fin,
+                "dias_restantes": (fin_date - hoy).days
+            })
+
+    contratos.sort(key=lambda x: x["vence_el"])
 
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
@@ -276,7 +330,7 @@ def dashboard(request: Request):
 
 
 # -----------------------------
-# Subida PDF (por usuario)
+# Subida PDF (por empresa)
 # -----------------------------
 @app.post("/subir_pdf/")
 async def subir_pdf(request: Request, file: UploadFile = File(...)):
@@ -284,7 +338,10 @@ async def subir_pdf(request: Request, file: UploadFile = File(...)):
     if not user:
         return RedirectResponse(url="/login", status_code=303)
 
-    carpeta_usuario = CARPETA_DOCS / user
+    empresa = get_empresa(user) or "Mi empresa"
+    empresa_slug = re.sub(r"[^a-zA-Z0-9_-]+", "_", empresa).strip("_")
+    carpeta_usuario = CARPETA_DOCS / empresa_slug / user
+
     carpeta_usuario.mkdir(parents=True, exist_ok=True)
 
     ruta = carpeta_usuario / file.filename
@@ -459,11 +516,18 @@ async def preguntar_contratos(request: Request, pregunta: str = Form(...)):
 @app.get("/config")
 def config_get(request: Request):
     user = usuario_actual(request)
+    empresa = get_empresa(user)
+    codigo = get_empresa_codigo(user)
+    if empresa and not codigo:
+    codigo = generar_codigo_empresa()
+    set_empresa_codigo(user, codigo)
     if not user:
         return RedirectResponse(url="/login", status_code=303)
 
     return templates.TemplateResponse("config.html", {
         "request": request,
+        "empresa": empresa,
+        "codigo": codigo,
         "email": get_email_alertas(user),
         "empresa": get_empresa(user),
         "ok": False
@@ -479,9 +543,14 @@ def config_post(request: Request, email: str = Form(""), empresa: str = Form("")
 
     set_email_alertas(user, email)
     set_empresa(user, empresa)
+    codigo = get_empresa_codigo(user)
+    if empresa and not codigo:
+        codigo = generar_codigo_empresa()
+        set_empresa_codigo(user, codigo)
 
     return templates.TemplateResponse("config.html", {
         "request": request,
+        "codigo": get_empresa_codigo(user),
         "email": email,
         "empresa": empresa,
         "ok": True
