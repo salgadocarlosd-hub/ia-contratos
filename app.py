@@ -82,6 +82,15 @@ def normalizar_password(p: str) -> str:
     b = p.encode("utf-8")[:72]
     return b.decode("utf-8", errors="ignore")
 
+def cargar_usuarios():
+    if USUARIOS.exists():
+        return json.loads(USUARIOS.read_text(encoding="utf-8"))
+    return []
+
+
+def guardar_usuarios(data):
+    USUARIOS.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
 
 def crear_usuario(username: str, password: str):
     usuarios = cargar_usuarios()
