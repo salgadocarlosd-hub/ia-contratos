@@ -11,3 +11,4 @@ yagmail
 requests
 python-multipart
 supabase
+python-dotenv
