@@ -1,0 +1,4 @@
+CONTRATO DE SERVICIOS Cliente: Empresa Ejemplo S.L. Proveedor: Servicios Técnicos Globales
+Fecha de inicio: 01/03/2026 Fecha de finalización: 01/03/2027 Importe anual: 12.000 € Este contrato
+tendrá una duración de 12 meses y podrá renovarse automáticamente si ninguna de las partes
+comunica su cancelación con 30 días de antelación.

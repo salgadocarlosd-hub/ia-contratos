@@ -1,0 +1,40 @@
+[
+  {
+    "archivo_pdf": "contrato_prueba.pdf",
+    "archivo_txt": "contrato_prueba.txt",
+    "fechas_detectadas": [
+      "2026-03-01",
+      "2027-03-01"
+    ],
+    "subido_en": "2026-02-13T14:38:23"
+  },
+  {
+    "archivo_pdf": "contrato_prueba (1).pdf",
+    "archivo_txt": "contrato_prueba (1).txt",
+    "fechas_detectadas": [
+      "2026-02-01",
+      "2026-03-15"
+    ],
+    "subido_en": "2026-02-13T14:43:32"
+  },
+  {
+    "archivo_pdf": "contrato_prueba (1).pdf",
+    "archivo_txt": "contrato_prueba (1).txt",
+    "fechas_detectadas": [
+      "2026-02-01",
+      "2026-03-15"
+    ],
+    "fecha_fin_detectada": null,
+    "subido_en": "2026-02-13T14:49:59"
+  },
+  {
+    "archivo_pdf": "contrato_prueba (1).pdf",
+    "archivo_txt": "contrato_prueba (1).txt",
+    "fechas_detectadas": [
+      "2026-02-01",
+      "2026-03-15"
+    ],
+    "fecha_fin_detectada": "2026-03-15",
+    "subido_en": "2026-02-13T14:55:50"
+  }
+]

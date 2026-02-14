@@ -1,0 +1,852 @@
+ 
+ 
+ 
+UNIDAD DIDÁCTICA 2 
+ 
+ 
+ 
+ 
+ 
+RETOS AMBIENTALES Y SOCIALES 
+EN EL DESARROLLO SOSTENIBLE 
+ 
+ 
+ 
+MÓDULO PROFESIONAL: SOSTENIBILIDAD 
+APLICADA AL SISTEMA PRODUCTIVO 
+ 
+ 
+ 
+   
+1 
+Índice 
+ 
+RESUMEN INTRODUCTORIO ............................................................................................. 2 
+INTRODUCCIÓN ................................................................................................................ 2 
+CASO INTRODUCTORIO .................................................................................................... 3 
+1. PRINCIPALES RETOS AMBIENTALES .............................................................................. 4 
+1.1 Cambio climático y movilidad sostenible ............................................................... 6 
+1.2 Descarbonización y gestión de residuos ................................................................. 8 
+1.3 Pérdida de biodiversidad y protección de ecosistemas ......................................... 9 
+2. PRINCIPALES RETOS SOCIALES .................................................................................... 10 
+2.1 Desigualdad (social, económica, de género…) ..................................................... 11 
+2.2 Pobreza ................................................................................................................. 12 
+2.3 Acceso a la educación ........................................................................................... 14 
+3. IMPACTO DE LOS RETOS AMBIENTALES Y SOCIALES EN LA ACTIVIDAD ECONÓMICA 17 
+3.1 Efectos sobre las personas y sectores productivos .............................................. 18 
+3.2 Medidas para minimizar impactos ambientales y sociales .................................. 20 
+RESUMEN FINAL ............................................................................................................. 23 
+ 
+   
+2 
+RESUMEN INTRODUCTORIO 
+ 
+Durante el desarrollo de esta unidad, veremos los principales desafíos que enfrentan 
+las sociedades en su búsqueda de un futuro sostenible. 
+ 
+Empezaremos con el impacto del cambio climático, analizando cómo el aumento de las 
+temperaturas globales y los cambios de patrones climáticos afectan los ecosistemas, la 
+agricultura y la vida humana. Se expondrán los métodos de reducción y adaptación 
+necesarios para enfrentar estos desafíos climáticos. 
+ 
+A continuación, abordaremos la pérdida de biodiversidad, explorando  cómo afecta a 
+los equilibrios naturales y qué medidas de conservación son esenciales para preservar 
+la riqueza biológica del planeta. Luego, se examinarán las dificultades en la gestión de 
+recursos naturales, enfatizando la necesidad de su uso equitativo y eficiente. 
+ 
+Además, analizaremos cómo los problemas sociales , como la pobreza, la desigualdad y 
+los derechos humanos , están intrínsecamente relacionados con el desarrollo 
+sostenible. También se examinará el papel de la gobernanza y las políticas públicas en 
+la implementación de soluciones efectivas a estos desafíos. 
+ 
+Por último, se presentarán casos exitosos que demuestran cómo la cooperación entre 
+el sector público y privado , y la participación comunitaria , pueden superar estos 
+obstáculos y promover prácticas sostenibles. 
+ 
+ 
+INTRODUCCIÓN 
+ 
+Es esencial para los futuros profesionales que buscan liderar en sectores cada vez más 
+centrados en la sostenibilidad y la responsabilidad social , conocer y manejar los 
+diversos aspectos y conceptos relacionados con los retos ambientales y sociales en el 
+desarrollo sostenible. En un mundo donde el cambio climático y la degradación 
+ambiental son una realidad apremiante, resulta crucial que quienes estén capacitados 
+en estos temas guíen a las organizaciones hacia prácticas que no solo sean rentables, 
+sino también sostenibles a largo plazo. Este conocimiento les permite encontrar 
+formas de reducir el impacto ambiental de las empresas, mejorar las prácticas 
+laborales y contribuir positivamente a la comunidad.  
+ 
+La pérdida de biodiversidad, la escasez de recursos naturales y el cambio climático 
+exigen soluciones y estrategias de gestión innovadoras que consideren no solo los 
+resultados económicos, sino también las implicaciones sociales y ambientales. En el 
+ámbito profesional, donde las expectativas de los consumidores y los marcos  
+3 
+regulatorios impulsan a las empresas hacia prácticas más sostenibles, la capacidad de 
+incorporar estos elementos en la toma de decisiones es cada vez más valorada. 
+ 
+Los profesionales que comprenden cómo aplicar los conceptos de sostenibilidad en 
+situaciones reales están mejor preparados para liderar puestos que requieren una 
+visión estratégica y la capacidad de implementar políticas de manera efectiva. 
+ 
+ 
+CASO INTRODUCTORIO 
+ 
+Estás trabajando  en una empresa que se está expandiendo y, por ello, enfrenta 
+desafíos ambientales y sociales. 
+ 
+Desde la dirección de la empresa, te han solicitado colaboración para evaluar los 
+efectos potenciales de una nueva planta de producción, tomando en cuenta el uso de 
+recursos naturales, la biodiversidad local y las condiciones socioeconómicas de las 
+comunidades cercanas. 
+ 
+En este contexto, es necesario crear un plan estratégico que incluya una evaluación de 
+los riesgos ambientales y sociales, así como las posibilidades de incorporar prácticas 
+sostenibles en todas las etapas del proyecto. 
+ 
+Esto implica trabajar con las autoridades locales, las organizaciones no 
+gubernamentales y los líderes comunitarios para garantizar que la expansión de la 
+empresa en la que trabajas cumpla con las normativas ambientales y aporte beneficios 
+a las comunidades locales. 
+ 
+Al finalizar esta unidad, serás capaz de desarrollar y aplicar estrategias sostenibles que 
+aborden estos desafíos, identifiquen y gestionen los riesgos asociados con los 
+proyectos de expansión empresarial , y promuevan un desarrollo socialmente inclusivo 
+y ambientalmente consciente. 
+    
+4 
+1. PRINCIPALES RETOS AMBIENTALES 
+ 
+La empresa  en la que trabajas busca mejorar sus prácticas para cumplir con las 
+normativas internacionales y minimizar su impacto ecológico. Ha formado un equipo, 
+del que formas parte, para evaluar desafíos como la gestión del agua, la emisión de 
+gases de efecto invernadero y la protección de la biodiversidad. Para ello, necesitas 
+colaborar en el desarrollo de  estrategias sostenibles que incorporen tecnologías 
+innovadoras y prácticas de economía circular, con el fin de asegurar el cumplimiento de 
+regulación y conseguir que la empresa tenga una mayor aceptación social. 
+ 
+En la actualidad , las organizaciones deben abordar una variedad de desafíos 
+ambientales para lograr un desarrollo sostenible.  Las empresas son sensibles a estos 
+desafíos porque afectan sus operaciones diarias, su responsabilidad social y su 
+reputación. Las principales dificultades ambientales incluyen: 
+ 
+1. Cambio climático: como resultado del aumento de las temperaturas y las 
+condiciones climáticas extremas, las empresas deben implementar estrategias 
+para reducir sus emisiones de gases de efecto invernadero y adaptarse a las 
+nuevas condiciones ambientales. 
+ 
+2. Gestión de recursos naturales: para evitar la sobreexplotación de recursos 
+como el agua, los minerales y los combustibles fósiles, es necesario 
+implementar prácticas más sostenibles y eficientes. 
+ 
+3. Contaminación: la contaminación del aire, el agua y el suelo sigue siendo un 
+problema importante. Para reducir su impacto ambiental, se requieren 
+tecnologías limpias y prácticas de gestión de desechos eficientes. 
+ 
+4. Pérdida de biodiversidad: las empresas deben abordar la destrucción de 
+hábitats naturales y la extinción de especies a través de la conservación y 
+restauración de ecosistemas. 
+ 
+5. Economía circular: la transición de un modelo económico lineal a uno circular, 
+en el que los recursos se reutilizan y se reducen los desechos, es fundamental 
+para mejorar la sostenibilidad y reducir el impacto ambiental. 
+ 
+ 
+  
+5 
+VÍDEO DE INTERÉS 
+ 
+Atiende a esta explicación, desde el minuto 0:23 al 8:47, sobre cómo el cambio climático está 
+afectando al turismo: 
+ 
+ 
+EJEMPLO PRÁCTICO 
+ 
+Carlos trabaja en una empresa de manufactura que depende en gran medida de recursos naturales 
+para su producción. Durante una evaluación anual, Carlos se da cuenta de que la empresa enfrenta 
+crecientes desafíos relacionados con el cambio climático, como la escasez de agua y la fluctuación en 
+la disponibilidad de materias primas debido a condiciones climáticas extremas. Además, las emisiones 
+de gases de efecto invernadero y la generación de residuos están comenzando a atraer la atención de 
+reguladores y grupos ambientalistas.  
+ 
+Para abordar estos retos, Carlos sugiere a la dirección que se realice un análisis más profundo de la 
+huella ambiental de la empresa y que se implementen tecnologías más limpias que reduzcan la 
+dependencia de recursos naturales escaso s. También propone la creación de un plan de gestión de 
+residuos y una estrategia para mejorar la eficiencia energética en las plantas de producción, con el 
+objetivo de minimizar el impacto ambiental y asegurar la sostenibilidad a lo largo plazo de la 
+empresa.  
+ 
+Enfrentar estos desafíos es esencial para cumplir con la normativa y asegurar la 
+aceptación social y el éxito de las empresas a largo plazo. Esta unidad discutirá cómo 
+las organizaciones pueden crear e implementar estrategias para abordar estos 
+problemas y fomentar prácticas sostenibles en sus operaciones. 
+ 
+ 
+6 
+ 
+Contaminación 
+Fuente: https://pixabay.com/es/photos/ambiental-contaminaci%C3%B3n-4405173/ 
+ 
+1.1 Cambio climático y movilidad sostenible 
+ 
+El calentamiento global  es uno de los desafíos ambientales más complejos que 
+enfrenta el mundo en la actualidad . La elevada concentración de gases de efecto 
+invernadero (GEI) en la atmósfera, principalmente debido a la quema de combustibles 
+fósiles, está ocasionando un incremento en las temperaturas globales, el derretimiento 
+de los glaciares y un  aumento en la frecuencia e intensidad de eventos climáticos 
+extremos. Este suceso tiene un impacto directo en la movilidad, dado que el sector del 
+transporte es uno de los principales responsables de las emisiones de GEI. 
+ 
+Estos son los principales efectos del cambio climático: 
+ 
+1. La temperatura global aumenta:  las temperaturas mínimas del planeta han 
+aumentado, lo cual ha generado deshielos en los polos, elevación del nivel del 
+mar y variaciones en los patrones climáticos. 
+ 
+2. Entornos climáticos extremos: se ha detectado un incremento en la frecuencia 
+e intensidad de sucesos como huracanes, tormentas, sequías e inundaciones, 
+que afectan tanto la vida de los seres humanos como los ecosistemas. 
+ 
+3. El impacto en la diversidad biológica:  los efectos meteorológicos afectan la 
+distribución de especies y hábitats, lo cual afecta la preservación de la 
+biodiversidad y la estabilidad de los ecosistemas. 
+ 
+La movilidad sostenible  se enfoca en la elaboración de sistemas de transporte que 
+sean eficaces, accesibles y sostenibles. Se trata de la adopción de tecnologías 
+sostenibles, tales como vehículos eléctricos, biocombustibles y el uso de fuentes de 
+ 
+7 
+energía renovable. Asimismo, impulsa el diseño de infraestructuras urbanas que  
+faciliten el uso equ itativo de vehículos, fomenten el  uso compartido de los mismos y 
+favorezcan el transporte a pie. 
+ 
+La adopción de medidas  para la movilidad sostenible comprende la promoción del uso 
+de vehículos eléctricos (VE) y la investigación en fuentes de energía biológica y celdas 
+de hidrógeno. Los automóviles eléctricos disminuyen las emisiones directas de gases 
+de efecto invernadero (GEI) y otros agentes contaminantes. Además, es esencial 
+mejorar y ampliar la infraestructura del transporte público con el objetivo de que sea 
+una opción viable y atractiva para más personas. Esto comprende sistemas de 
+autobuses rápidos, trenes eléctricos y metros. Asimismo, se debe impulsar la creación 
+de vías seguras para ciclistas y peatones con el objetivo de fomentar el uso de 
+bicicletas y el desplazamiento a pie, con ciudades estableciendo  cada vez más  carriles 
+para bicicletas y zonas de peatones. 
+ 
+La aplicación de sistemas de gestión de tráfico inteligentes es otra estrategia relevante, 
+ya que optimiza el flujo vehicular y disminuye las carencias. La investigación en 
+vehículos autónomos también podría modificar significativamente la forma en que 
+comprendemos la movilidad. Cumplir con principios de economía circular en el 
+transporte es fundamental para incrementar la eficacia de los recursos en el diseño y 
+la producción de vehículos, fomentando el uso y la reutilización de materiales. 
+ 
+Con respecto  a los obstáculos y soluciones, es fundamental establecer políticas que 
+respalden la migración hacia vehículos más limpios, con incentivos fiscales para la 
+adquisición de vehículos eléctricos y regulaciones más rigurosas sobre emisiones. El 
+diseño de campañas de concienciación pública que sensibilicen a los ciudadanos sobre 
+los beneficios de la movilidad sostenible y cómo los individuos pueden contribuir 
+también es fundamental.  
+ 
+La planificación urbana debe integrar el transporte público, la vivienda y las áreas de 
+trabajo, con el fin de disminuir la demanda de desplazamientos prolongados. En última 
+instancia, incrementar las inversiones en infraestructura que respalden estrategias de 
+transporte sostenibles, tales como estaciones de carga para vehículos eléctricos y 
+carriles exclusivos para el transporte público, es fundamental para avanzar hacia una 
+movilidad más sostenible. 
+ 
+ 
+ 
+  
+8 
+ENLACE DE INTERÉS 
+ 
+Conoce los principales desafíos ambientales que enfrenta Europa, tales como el cambio climático, la 
+pérdida de biodiversidad, la contaminación y la gestión de recursos naturales: 
+ 
+ 
+1.2 Descarbonización y gestión de residuos 
+ 
+Se trata de un proceso fundamental para disminuir la dependencia de los combustibles 
+fósiles y disminuir las emisiones de gases de efecto invernadero (GEI), las cuales son las 
+principales causas del calentamiento global. La migración hacia fuentes de energía más 
+limpias y sosteni bles, como la solar, la eólica y  la hidroeléctrica, es fundamental para 
+eliminar el calentamiento global. 
+ 
+Esta estrategia también implica la disminución de la eficiencia energética en diversos 
+sectores, como el industrial, el transporte y el residencial. Las compañías están 
+empleando tecnologías innovadoras, como la captura y el almacenamiento de 
+carbono, con el propósito de disminuir sus residuos de carbono. 
+ 
+La adopción de medidas gubernamentales que fomenten el uso de energías 
+sostenibles, mediante incentivos fiscales y subsidios, es fundamental para impulsar 
+este proceso. La cooperación internacional también desempeña  un papel fundamental 
+en la desc arbonización, dado que el cambio climático es un problema global que 
+requiere soluciones coordinadas a nivel mundial. 
+ 
+ 
+Residuos 
+Fuente: https://pixabay.com/es/photos/basura-contaminaci%C3%B3n-ambiental-1260832/ 
+ 
+9 
+La administración de residuos, además, se enfoca en disminuir el impacto ambiental de 
+los desechos que se generan a través de la actividad humana. La gestión de residuos 
+eficaces comienza con la disminución de la cantidad de residuos generados mediante 
+medidas sostenibles y eficaces en el uso de recursos. Se trata de estrategias 
+fundamentales para desviar los residuos de los vertederos y disminu ir la demanda de 
+productos nuevos. 
+ 
+Los residuos orgánicos pued en ser transformados en compost  o utilizados para 
+generar energía mediante procedimientos como la digestión anaeróbica. Asimismo, las 
+tecnologías de vanguardia se han puesto en marcha con el objetivo de optimizar el 
+tratamiento de residuos, tales como la transformación de residuos plásticos en 
+combustibles o en nuevas fuentes de energía. 
+ 
+Las medidas gubernamentales son fundamentales para asegurar la administración 
+adecuada de residuos y fomentar estrategias sostenibles, como la economía circular, 
+donde los productos se diseñan para ser reciclados y reutilizados de forma continua, 
+reduciendo de esta forma el desperdicio y preservando los recursos naturales. 
+ 
+La aplicac ión de estas estrategias de desc arbonización y gestión de residuos es 
+fundamental para impulsar un desarrollo sostenible que preserva el medio ambiente,  
+impulsa la economía y mejora la calidad de vida de las comunidades. A medida que se 
+avanza en estos ámbitos, se generan nuevas oportunidades de empleo y se foment a 
+una sociedad más resistente y sostenible. 
+ 
+1.3 Pérdida de biodiversidad y protección de ecosistemas 
+ 
+La disminución de la biodiversidad y la disminución de los ecosistemas son problemas 
+ambientales pendientes que afectan la estabilidad ecológica y el bienestar de los seres 
+humanos. La diversidad biológica es fundamental para el funcionamiento de los 
+sistemas naturales que brindan servicios fundamentales , como la regulación del clima, 
+la polinización de cultivos y el abastecimiento de agua potable. No obstante, las 
+actividades humanas como la deforestación, la urbanización y la contaminación , están 
+incrementando la pérdida de biodiversidad a niveles alarmantes. 
+ 
+La deforestación disminuye la variedad de hábitats disponibles para diversas especies, 
+lo cual conduce a su extinción tanto a nivel local como a nivel global. La polución del 
+agua, el suelo y el aire tiene un impacto en la salud de los ecosistemas y de los 
+organismos que los rodean, siendo los productos químicos tóxicos y los plásticos 
+particularmente perjudiciales. El cambio climático  afecta los entornos naturales, 
+afectando los patrones de migración, reproducción y supervivencia de las especies, lo 
+cual pone en peligro a aquellos que no pueden adaptarse de manera rápida.  
+10 
+La introducción de especies invasoras puede afectar a las especies locales, afectando 
+los ecosistemas y disminuyendo la diversidad biológica. Para proteger los ecosistemas, 
+es fundamental establecer y administrar áreas protegidas , tales como parques 
+nacionales y reservas naturales, que brindan refugio a especies amenazadas. La 
+recuperación de hábitats desfavorables, como la reforestación y la recuperación de 
+humedales, contribuye a salvaguardar la biodiversidad y los servicios ecosistémicos 
+perdidos. Los programas de preservación de especies  protegen a las especies 
+individuales a través de actividades como la cría en cautividad y la reintroducción en la 
+naturaleza. Proporcionar una mayor comprensión pública acerca de la relevancia de la 
+biodiversidad puede impulsar acciones individuales y colectivas en favor de su 
+preservación. 
+ 
+Implementar medidas que minimicen la explotación de  recursos naturales y 
+disminuyan la contaminación es esencial para la preservación de la fauna. Las 
+organizaciones también desempeñan un papel fundamental en la preservación de la 
+biodiversidad al adoptar estrategias sostenibles en sus operaciones, como el uso 
+responsable de recursos y la disminución de residuos. La preservación de la 
+biodiversidad y los ecosistemas es fundamental para el entorno natural y el desarrollo 
+sostenible, y adoptar un enfoque integral que integre la conservación, la restauración y 
+la gestión sostenible es esencial para enfrentar los obstáculos actuales y asegu rar un 
+futuro mejor. 
+ 
+ 
+ 
+2. PRINCIPALES RETOS SOCIALES 
+ 
+En el proceso  de expansión de la organización, te encuentras con la necesidad de 
+abordar varios retos sociales en las comunidades locales. La región en la que la 
+empresa busca establecer su nueva planta de producción enfrenta problemas como la 
+desigualdad social, el acceso limitado a la educación y los servicios básicos, así como la 
+falta de oportunidades de empleo. Estos desafíos requieren que el equipo al que 
+perteneces desarrolle estrategias que no solo mitiguen los impactos negativos de la 
+expansión, sino que también promuev an el bienestar de las comunidades locales. Para 
+ello, será crucial involucrar a los líderes comunitarios y a las organizaciones locales en 
+la creación de programas que mejoren las condiciones de vida y ofrezcan nuevas 
+oportunidades para los residentes de la zona.  
+ 
+Los desafíos sociales  comprenden la administración de la igualdad de género, la 
+fomentación de condiciones laborales justas, y la promoción y diversidad en el entorno 
+laboral. Las organizaciones deben enfrentar y superar estos obstáculos para cumplir  
+11 
+con las normativas internacionales y expectativas de los clientes, al mismo tiempo que 
+promueven un entorno laboral justo y equitativo. 
+ 
+ 
+Retos sociales 
+Fuente: https://www.freepik.es/foto-gratis/imagen-recortada-equipo-jovenes-amigos-
+multietnicos_8079652.htm#fromView=search&page=1&position=12&uuid=6153c137-7eff-44e9-9014-131902ef72ff  
+ 
+La igualdad  de género y el fortalecimiento de las mujeres en el ámbito laboral son 
+áreas fundamentales. Las organizaciones deben establecer políticas y prácticas que 
+fomenten un equilibrio justo entre los  géneros y brinde n oportunidades equitativas 
+para todos los empleados. Las condiciones laborales también desempeñan un papel 
+fundamental, dado que las organizaciones deben asegurar que los estándares 
+laborales sean justos y seguros, lo cual previene el abuso y el trato desigual. 
+ 
+Asimismo, la inclusión social se enfoca en establecer un entorno en el que todas las 
+personas, sin importar su origen, raza, religión u orientación sexual, se sientan 
+valoradas y respetadas. Esto requiere la adopción de políticas que fomenten la 
+diversidad y fomenten una cultura de integración y respeto. 
+ 
+2.1 Desigualdad (social, económica, de género…) 
+ 
+La desigualdad es un fenómeno complejo que afecta diversos aspectos de la vida en la 
+sociedad y tiene consecuencias significativas en el campo laboral y empresarial. En 
+este apartado, se analizará la disparidad desde tres perspectivas fundamentales: 
+social, económica y de género. Cada una de estas áreas presenta desafíos y 
+oportunidades que tienen un impacto en el progreso profesional y en las acciones 
+empresariales sostenibles. 
+ 
+La desigualdad social  se refiere a las disparidades en la distribución de recursos, 
+oportunidades y derechos entre distintos sectores sociales. Estas disparidades pueden 
+ 
+12 
+evidenciarse en el acceso a educación, servicios de salud y condiciones de vida 
+apropiadas. En el ámbito profesional, la disparidad social se traduce en disparidades en 
+las oportunidades de empleo y promoción, así como en la calidad de los entornos 
+laborales. 
+ 
+La desigualdad económica  se refiere a la distribución dispar de ingresos y recursos 
+entre individuos y grupos en una sociedad. Esta disparidad se puede apreciar en 
+diferencias salariales, acceso a oportunidades económicas y condiciones laborales. En 
+el ámbito empresarial, la disparidad económica puede tener un impacto en la 
+capacidad de una organización para atraer y retener talento, así como en su 
+reputación corporativa. 
+ 
+La desigualdad de género se refiere a las disparidades en el trato y las oportunidades 
+disponibles para individuos de distintos géneros. Esta disparidad se puede apreciar en 
+el acceso a roles de liderazgo, la disparidad salarial entre hombres y mujeres , y la 
+representación en diversas industrias. Fomentar la equidad de género es  fundamental 
+para establecer entornos laborales inclusivos y equitativos. 
+ 
+EJEMPLO PRÁCTICO 
+ 
+En la empresa en la que trabaja, Ana ha detectado una disparidad significativa en la representación 
+de mujeres en puestos de liderazgo en comparación con sus colegas masculinos. A pesar de contar 
+con una política de igualdad de oportunidades, la brecha persiste. Ana decide investigar más a fondo 
+la situación y encuentra que la falta de mujeres en puestos de liderazgo se debe a una combinación 
+de factores, incluyendo sesgos inconscientes en los procesos de promoción y la ausencia de 
+programas de mentoría específicos para mujeres. 
+ 
+Para abordar este problema, Ana propone la implementación de un programa de mentoría dirigido 
+por líderes femeninas dentro de la empresa, así como la revisión y ajuste de los procesos de 
+promoción para asegurar una mayor equidad. Además, sugiere la organización de talleres de 
+sensibilización sobre sesgos inconscientes para todos los empleados.  
+ 
+2.2 Pobreza 
+ 
+La pobreza  va más allá de la simple falta de ingresos o recursos financieros y es un 
+fenómeno multidimensional. Es esencial para los profesionales  comprender los 
+múltiples aspectos que contribuyen a la pobreza y sus implicaciones para el desarrollo 
+sostenible. 
+ 
+ 
+13 
+La pobreza puede analizarse desde diferentes dimensiones, incluyendo: 
+ 
+• Económica: se refiere a la incapacidad de una persona o familia para satisfacer 
+sus necesidades básicas, generalmente medida por el ingreso. La 
+implementación de políticas económicas y el análisis de mercados dependen de 
+esta dimensión. Los profesionales en este campo requieren indicadores 
+económicos como el umbral de pobreza y el índice de pobreza 
+multidimensional (IPM). 
+ 
+• Social: la pobreza también tiene un impacto en el acceso a servicios básicos , 
+como la educación, la atención médica y la vivienda. La falta de oportunidades 
+laborales y una educación de baja calidad perpetúan el ciclo de la pobreza. Es 
+fundamental implementar estrategias que mejoren el acceso a estos servicios 
+esenciales en el ámbito profesional, especialmente en roles de planificación y 
+desarrollo social. 
+ 
+• Cultural y psicológica: la pobreza puede afectar la autoestima de las personas y 
+las expectativas de vida. Es fundamental para las empresas crear programas de 
+responsabilidad social que aborden estos problemas y fomenten una cultura de 
+igualdad. 
+ 
+VÍDEO DE INTERÉS 
+ 
+Aquí puedes ampliar tu conocimiento sobre el Objetivo de Desarrollo Sostenible que aborda la 
+pobreza: 
+ 
+ 
+La pobreza no solo afecta a las personas, sino también al desarrollo económico de una 
+región o país. Es fundamental para los profesionales del desarrollo económico y la 
+planificación estratégica comprender cómo la pobreza limita el crecimiento 
+económico. La pobreza puede causar menos productividad laboral, menos capital 
+humano disponible y más costes para las empresas. 
+ 
+ 
+ 
+14 
+Por todo ello, existen estrategias para poder combatir la pobreza: 
+ 
+• Educación y f ormación: para romper el ciclo de la pobreza, es necesario 
+mejorar el acceso a la educación y a programas de capacitación profesional. Los 
+expertos en este campo deben concentrarse en crear políticas educativas que 
+sean inclusivas y brinden oportunidades de aprendizaje a todos los sectores de 
+la sociedad. 
+ 
+• Acceso a servicios financieros: la inclusión financiera a través de microcréditos 
+y servicios bancarios accesibles puede empoderar a las personas en situación 
+de pobreza, permitiéndoles invertir en pequeñas empresas y mejorar su 
+bienestar económico. 
+ 
+• Desarrollo sostenible: la inclusión de prácticas sostenibles en las estrategias de 
+desarrollo económico puede reducir la pobreza a largo plazo. Esto incluye 
+fomentar el uso eficiente de los recursos naturales y promover la 
+implementación de tecnologías verdes que creen empleo en áreas vulnerables. 
+ 
+• Participación comunitaria: participar en la planificación y ejecución de 
+proyectos de desarrollo asegura que las soluciones sean pertinentes y 
+efectivas. La participación activa en los proyectos mejora los resultados y 
+fortalece el tejido social. 
+ 
+ 
+Pobreza 
+Fuente: https://pixabay.com/es/photos/vagabundo-mendigo-pobreza-limosna-5520021/ 
+ 
+2.3 Acceso a la educación 
+ 
+Un derecho humano fundamental es el acceso a la educación, que es esencial para el 
+crecimiento económico y social. Para reducir la desigualdad, fomentar el crecimiento 
+económico inclusivo y lograr los Objetivos de Desarrollo Sostenible (ODS), 
+ 
+15 
+especialmente el ODS 4 , es esencial garantizar que todas las personas tengan la 
+oportunidad de recibir una educación de calidad. 
+ 
+El acceso a la educación se ve afectado por una variedad de  obstáculos. Muchas 
+familias enfrentan dificultades importantes debido a factores económicos, como los 
+costes directos e indirectos de la educación. Estos costes incluyen la matrícula, los 
+materiales, el transporte y la pérdida de ingresos cuando los niños asisten a la escuela 
+en lugar de trabajar. Además, la disparidad económica entre regiones y grupos 
+socioeconómicos tiene un impacto en el acceso y la calidad de la educación de los 
+estudiantes. 
+ 
+ARTÍCULO DE INTERÉS 
+ 
+En este artículo se profundiza en el desarrollo industrial, en el que se relacionan de lleno los retos 
+ambientales: 
+ 
+ 
+La ubicación geográfica es importante para el acceso a la educación. Con frecuencia, 
+las zonas rurales o remotas carecen de la infraestructura educativa adecuada, lo que 
+dificulta el acceso a una educación de alta calidad. Los estudiantes que viven lejos  de 
+las escuelas pueden encontrar dificultades para asistir regularmente , debido a la falta 
+de transporte y logística adecuados. 
+ 
+Otra barrera significativa para el acceso a la educación son los factores culturales y 
+sociales. Las normas de género pueden limitar el acceso de las niñas a la educación en 
+algunas culturas, mientras que la discriminación y la exclusión social afectan a las 
+minorías étnicas, las personas con discapacidades y otros grupos marginalizados. Estos 
+desafíos son profundos y requieren un enfoque inclusivo para garantizar que todos los 
+estudiantes tengan oportunidades iguales de aprendizaje y crecimiento. 
+ 
+Otro factor importante que afecta el acceso es la calidad educativa.  La calidad de la 
+educación que reciben los estudiantes está directamente influenciada por la 
+disponibilidad de recursos, como libros de texto, tecnología y maestros calificados. La 
+ 
+16 
+falta de infraestructura escolar puede desalentar la asistencia y afectar el aprendizaje, 
+lo que limita las oportunidades educativas. 
+ 
+Mejorar el acceso a la educación tiene muchas ventajas. La educación reduce la 
+pobreza y aumenta las oportunidades de empleo. Las personas educadas tienen más 
+probabilidades de participar en la sociedad y tomar decisiones informadas que 
+beneficien a sus comunidades. La educación también juega un papel importante en la 
+promoción de la igualdad de género y en la mejora de la salud y el bienestar general. 
+ 
+EJEMPLO PRÁCTICO 
+ 
+Samuel trabaja para una organización no gubernamental que se enfoca en el desarrollo comunitario 
+en áreas rurales. Samuel observa en una comunidad aislada que muchos niños en edad escolar no 
+van a clases debido a la falta de infraestructura educativa y recursos básicos , como libros y uniformes. 
+La falta de acceso a la escuela más cercana, combinada con la falta de recursos financieros de las 
+familias, dificulta que muchos niños reciban una educación adecuada.  
+ 
+Samuel propone la creación de un programa de apoyo para mejorar el acceso a la educación en esta 
+comunidad, que incluya la construcción de una escuela local equipada con materiales educativos 
+adecuados. Además, sugiere la creación de un sistema de transporte escolar para facilitar el acceso a 
+la educación, así como la creación de becas y programas de nutrición que incentiven a las familias a 
+enviar a sus hijos a la escuela. Samuel también aboga por la capacitación de maestros locales, que 
+mejoraría la calidad de la enseñanza y proporcionaría empleo y fortalecería la comunidad.  
+ 
+Es fundamental implementar políticas públicas inclusivas que subsidien o eliminen los 
+costes para las familias de bajos ingresos para mejorar el acceso a la educación. Para 
+garantizar que las instalaciones sean adecuadas y accesibles para todos, incluidas las 
+personas con discapacidades, es esencial invertir en infraestructura escolar. Una 
+estrategia efectiva para mejorar la retención escolar es la creación de programas que 
+fomenten la asistencia y disminuyan la deserción escolar, especialmente entre grupos 
+vulnerables. Además, es esencial promover la equidad de género a través de campañas 
+de sensibilización y políticas específicas para asegurar que todos los estudiantes, 
+independientemente de su género, tengan acceso a una educación de alta calidad. 
+ 
+ 
+  
+ 
+17 
+3. IMPACTO DE LOS RETOS AMBIENTALES Y 
+SOCIALES EN LA ACTIVIDAD ECONÓMICA 
+ 
+A medida que avanzas  en la planificación de la expansión de la organización, te 
+enfrentas a la tarea de analizar cómo los retos ambientales y sociales de la región 
+pueden influir en el éxito económico del proyecto. 
+ 
+Factores como el cambio climático, la escasez de recursos naturales, y las tensiones 
+sociales derivadas de la desigualdad y la pobreza, pueden afectar significativamente 
+las operaciones de la empresa. Estos retos no solo presentan riesgos que deben 
+gestionarse, sino que también ofrecen oportunidades para innovar y adaptar prácticas 
+empresariales sostenibles que pueden generar beneficios económicos a largo plazo. 
+ 
+El equipo al que perteneces deberá identificar y evaluar cómo estos desafíos impactan 
+en los costes, la productividad y la aceptación social de la empresa, con el fin de 
+desarrollar un plan que permita a la organización operar de manera responsable y 
+sostenible en este nuevo entorno.  
+ 
+Los retos  ambientales y sociales tienen un impacto significativo en la actividad 
+económica, tanto en las decisiones de inversión como en la producción y en el 
+consumo. Los obstáculos ambientales, tales como el calentamiento global, la pérdida 
+de biodiversidad y la carencia de recursos naturales, requieren que las organizaciones 
+adopten estrategias sostenibles para disminuir sus efectos y asegurar la sostenibilidad 
+de sus actividades. Por ejemplo, las organizaciones deben examinar su grado de 
+carbono y buscar fuentes de energía sostenibles para disminuir sus emisiones de gases 
+de efecto invernadero. 
+ 
+ 
+Economía 
+Fuente: https://www.freepik.es/foto-gratis/vista-superior-personas-discutiendo-modales-
+finanzas_11621104.htm#fromView=search&page=1&position=38&uuid=d74201b0-9d5f-4323-8ce9-4a826f690134 
+ 
+ 
+18 
+Las empresas se enfrentan a la urgencia de adaptarse a regulaciones ambientales más 
+rigurosas, lo cual puede requerir inversiones en tecnologías más limpias y eficaces. La 
+adopción de medidas sostenibles no solo contribuye a cumplir con las normas, sino 
+que también puede incrementar la reputación corporativa y aumentar la fidelidad del 
+cliente. Asimismo, los obstáculos sociales, como la disparidad y el acceso a la 
+educación, tienen un impacto en el capital humano y la productividad. Las 
+organizaciones deben tener en cuenta la inclusión social y la diversidad en sus 
+estrategias de desarrollo, asegurando que sus prácticas laborales sean equitativas y 
+justas. 
+ 
+3.1 Efectos sobre las personas y sectores productivos 
+ 
+Los retos  ambientales y sociales tienen un impacto significativo en diversos sectores 
+productivos y en la calidad de vida de las personas. Estos efectos se pueden apreciar 
+de diversas maneras, desde cambios en los patrones de empleo hasta la disminución 
+de las cadenas de distribución. Es fundamental que los profesionales comprendan 
+cómo estos cambios tienen un impacto tanto a nivel macroeconómico como 
+microeconómico, y cómo pueden influir en su trayectoria profesional en el ámbito 
+seleccionado. 
+ 
+1. Impacto en el empleo y el capital humano. 
+ 
+El calentamiento global y la presión social por medidas sostenibles están generando 
+cambios en el entorno laboral. Por un lado, la urgencia de adaptarse a normas 
+medioambientales está generando nuevos puestos de trabajo en áreas como la 
+investigación de energías renovables, la administración de residuos y la sostenibilidad 
+energética. Asimismo, áreas tradicionales como la minería y la agricultura enfrentan 
+dificultades debido a la carencia de recursos naturales y el cambio en los patrones 
+climáticos, lo cual puede conducir a la disminución de empleo y la urgencia de 
+reemplazo profesional. 
+ 
+Las empresas  se encuentran cada vez más comprometidas con la responsabilidad 
+social corporativa (RSC), lo cual implica cambios en las expectativas laborales. Los 
+empleados deben estar dispuestos a desempeñar tareas que enfocan la sostenibilidad 
+y la ética empresarial. La formación continua y el desarrollo de capacidades verdes se 
+convierten en elementos fundamentales para mantener la plena empleabilidad en un 
+entorno laboral en constante evolución. 
+ 
+2. Transformación de sectores productivos. 
+  
+19 
+Cada sector económico enfrenta sus propios desafíos específicos debido a las 
+condiciones ambientales y sociales: 
+ 
+• Sector agrícola: es sumamente vulnerable al cambio climático debido a su 
+independencia de las condiciones meteorológicas. La sequía, las inundaciones y 
+los cambios en la temperatura afectan de manera directa la productividad y la 
+seguridad alimentaria. Deben adoptar estrategias agrícolas sostenibles, tales 
+como la agricultura de conservación y la administración integral de plagas, con 
+el fin de reducir estos efectos. 
+ 
+• Sector industrial:  se encuentra bajo una elevada presión para disminuir su 
+rendimiento de carbono y disminuir el desperdicio. Esto requiere inversión en 
+tecnología limpia y la adopción de procedimientos más eficaces. Las compañías 
+que no se ajusten a estas exigencias tienen el peligro de sanciones regulatorias 
+y pérdida de posición competitiva en el mercado global. 
+ 
+• Sector de servicios: especialmente en el turismo y el transporte, este sector se 
+ve afectado por las cuestiones ambientales y la demanda de acciones 
+sostenibles por parte de los consumidores. Los operadores turísticos y las 
+aerolíneas están implementando medidas para disminuir el impacto ambiental, 
+tales como el uso de fuentes de energía alternativa y la promoción del 
+ecoturismo. 
+ 
+PARA SABER MÁS 
+ 
+Vamos a analizar concretamente qué retos ambientales se presentan en 2024 y qué acciones son 
+necesarias llevar a cabo: 
+ 
+ 
+3. Resiliencia y adaptación:  
+ 
+Para asegurar que las personas y los sectores productivos prosperen en un entorno 
+cambiante, es fundamental fomentar la resiliencia y la capacidad de adaptación. Las 
+organizaciones deben invertir en desarrollo y tecnología con el fin de anticiparse a las 
+ 
+20 
+normativas y demandas del mercado. Asimismo, los empleados deben estar dispuestos 
+a adquirir nuevas aptitudes y ser flexibles en sus tareas profesionales. 
+ 
+La educación y la formación profesional desempeñan un papel fundamental en este 
+contexto, ya que brindan a los estudiantes la oportunidad de enfrentar los desafíos y 
+aprovechar las oportunidades emergentes. Dado que comprenden los impactos de los 
+desafíos ambientales y sociales en la economía, los futuros profesionales podrán 
+desempeñarse de manera activa en la construcción de un sistema económico más 
+sostenible y equitativo. 
+ 
+EJEMPLO PRÁCTICO 
+ 
+María trabaja en una empresa agroalimentaria que ha comenzado a notar los efectos del cambio 
+climático en su cadena de suministro. Las sequías prolongadas y las olas de calor están afectando la 
+producción agrícola, lo que a su vez está generando una escasez de materias primas y un aumento en 
+los costes de producción. Los agricultores, que forman parte esencial de la cadena de suministro, 
+están luchando por adaptarse a las nuevas condiciones, lo que está provocando una disminución en 
+la calidad y cantidad de los productos que pueden ofrecer. 
+ 
+Para enfrentar estos desafíos, María sugiere que la empresa invierta en programas de capacitación 
+para los agricultores locales, ayudándoles a adoptar prácticas agrícolas más sostenibles y resistentes 
+al clima. Además, propone que la empresa diversifique sus fuentes de suministro para reducir la 
+vulnerabilidad ante los cambios climáticos, y que trabaje en colaboración con organizaciones 
+agrícolas para desarrollar nuevas tecnologías que puedan mitigar los efectos del cambio climático en 
+la producción. Estos pasos no solo ayudarán a estabilizar la cadena de suministro, sino que también 
+promoverán una relación más sólida y sostenible entre la empresa y las comunidades agrícolas. 
+ 
+ 
+ 
+3.2 Medidas para minimizar impactos ambientales y sociales 
+ 
+La disminución de las repercusiones ambientales y sociales en la actividad económica 
+es fundamental para alcanzar un desarrollo sostenible. En el ámbito profesional, se 
+prevé que los individuos adopten estrategias que no solo cumplan con las normativas 
+actuales, sino que también fomenten prácticas responsables y sostenibles en sus áreas 
+de actividad. 
+ 
+A continuación, se presentan las acciones esenciales que pueden adoptar se para 
+disminuir estos efectos:  
+ 
+ 
+21 
+• Medidas ambientales: 
+ 
+o Gestión de residuos: 
+ 
+▪ La reducción, la reutilización y el reciclaje: poner en marcha políticas de 
+las tres "R" con el objetivo de disminuir la producción de residuos. Esto 
+requiere elaborar productos y procesos que utili cen materiales de alta 
+calidad, fomentando el uso de materiales dentro de la cadena de 
+producción. 
+ 
+▪ Gestión integral de residuos peligrosos: implementar medidas para el 
+manejo seguro de residuos peligrosos, asegurando su posición final 
+adecuada y disminuyendo su generación a través del uso de alternativas 
+menos contaminantes. 
+ 
+o Eficiencia energética: 
+ 
+▪ Tecnologías limpias: implementar tecnologías que incrementen la 
+eficacia energética de los procesos productivos, disminuyendo el 
+consumo de energía y las emisiones de gases de efecto invernadero. 
+ 
+▪ Energías renovables: proporcionar el uso de fuentes de energía 
+alternativa, tales como la solar, la eólica y la biomasa, disminuyendo la 
+dependencia de combustibles fósiles. 
+ 
+o Conservación de recursos naturales: 
+ 
+▪ Administración sostenible del agu a: implementar estrategias de riego 
+eficientes, recopilación de agua y control de fugas , con el fin de 
+disminuir el consumo de agua en actividades industriales y agrícolas. 
+ 
+▪ Protección de los recursos naturales : diseño de estrategias que 
+protegen la fauna local, tales como la creación de entornos ecológicos y 
+la recuperación de hábitats naturales. 
+ 
+• Medidas sociales: 
+ 
+o Responsabilidad social corporativa (RSC): 
+  
+22 
+▪ Prácticas laborales justas:  promover condiciones de trabajo seguras y 
+justas, garantizando el respeto a los derechos laborales y la equidad de 
+oportunidades. 
+ 
+▪ Compromiso comunitario: fomentar iniciativas que beneficien a las 
+comunidades locales, tales como programas de educación y salud, y 
+mejorar la infraestructura comunitaria. 
+ 
+o Educación y sensibilización:  
+ 
+▪ Capacitación continua:  proporcionar asistencia continua a los 
+empleados acerca de estrategias sostenibles y la relevancia de reducir 
+los impactos ambientales y sociales. 
+ 
+▪ La concienciación pública es fundamental : llevar a cabo campañas de 
+sensibilización, con el fin de sensibilizar al público acerca de la 
+relevancia del consumo responsable y la protección ambiental. 
+ 
+ 
+Educación 
+Fuente: https://pixabay.com/es/photos/libro-asia-ni%C3%B1os-educaci%C3%B3n-ni%C3%B1a-1822474/ 
+ 
+o Las políticas inclusivas:  
+ 
+▪ La diversidad e inclusión:  implementar políticas que fomenten la 
+diversidad y la integración dentro de la organización, asegurando la 
+representación y participación de grupos minoritarios. 
+ 
+▪ La participación ciudadana:  involucrar a las comunidades locales en la 
+toma de decisiones sobre proyectos que puedan tener un impacto en 
+ellos, asegurando un enfoque participativo y transparente. 
+ 
+23 
+ 
+RESUMEN FINAL 
+ 
+Se ha abordado cómo los obstáculos ambientales y sociales afectan la economía global 
+y cómo las organizaciones deben adaptarse para ser sostenibles. Se ha reflexionado 
+sobre la relevancia del desarrollo sostenible como un concepto fundamental que busca 
+satisfacer las demandas actuales sin comprometer la capacidad de las generaciones 
+futuras para satisfacer las suyas. Se ha analizado cómo la sostenibilidad no solo es una 
+responsabilidad ética, sino también una oportunidad para innovar y aumentar la 
+competitividad. 
+ 
+Un aspecto fundamental ha sido la evaluación del acceso a la educación y su función 
+clave en la reducción de la pobreza y la desigualdad. Se ha estudiado cómo la 
+educación puede impulsar a las comunidades, permitiéndoles adaptarse a los cambios 
+económicos y tecnológicos, y cómo las políticas educativas deben enfocarse en la 
+equidad para maximizar su impacto positivo. 
+ 
+Los efectos de los desafíos ambientales y sociales en la actividad económica se 
+evidencian en cómo impactan tanto a las personas como a los sectores productivos. 
+Los impactos en las personas incluyen cambios en el mercado laboral y la necesidad 
+urgente de adquirir nuevas habilidades, mientras que los sectores productivos 
+enfrentan el reto de adaptarse a regulaciones más estrictas y a las crecientes 
+expectativas de sostenibilidad. Las organizaciones deben adoptar estrategias de 
+responsabilidad social corporativa (RSC) para responder a estos desafíos, fomentando 
+un entorno de trabajo inclusivo y ético. 
+ 
+En cuanto a las acciones para mitigar estos efectos, se ha discutido la adopción de 
+estrategias como la economía circular y el uso eficiente de los recursos. Se ha 
+destacado la importancia de medidas que promuevan las energías sostenibles, 
+reduzcan las emisiones de carbono  y fomenten la producción y el consumo 
+sustentables. 
+ 
+También se ha subrayado la importancia de adoptar un enfoque proactivo y preventivo 
+para anticipar y mitigar los desafíos asociados con los problemas ambientales y 
+sociales. Se ha adquirido un entendimiento de cómo la integración de estos enfoques 
+en la estrategia empresarial no solo contribuye al entorno natural y a la sociedad, sino 
+que también puede generar ventajas competitivas significativas para las 
+organizaciones. 
+ 

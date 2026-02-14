@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Panel de contratos</title>
+</head>
+<body>
+
+<p>Hola, {{ user }} — <a href="/config">Configuración</a> — <a href="/logout">Salir</a></p>
+
+
+<h1>Contratos próximos a vencer</h1>
+
+<ul>
+    {% for contrato in contratos %}
+    <li>
+        {{ contrato.archivo_pdf }} — vence el {{ contrato.vence_el }}
+    </li>
+    {% endfor %}
+</ul>
+
+<h2>Subir nuevo contrato</h2>
+<form action="/subir_pdf/" enctype="multipart/form-data" method="post">
+    <input name="file" type="file">
+    <button type="submit">Subir</button>
+</form>
+
+</body>
+</html>

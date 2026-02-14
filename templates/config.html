@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head><title>Configuración</title></head>
+<body>
+  <p><a href="/">Volver</a> | <a href="/logout">Salir</a></p>
+  <h1>Configuración</h1>
+
+  {% if ok %}
+    <p style="color:green;">Guardado ✅</p>
+  {% endif %}
+
+  <form action="/config" method="post">
+    <label>Email para recibir alertas</label><br>
+    <input name="email" value="{{ email or '' }}" style="width:320px;"><br><br>
+    <button type="submit">Guardar</button>
+  </form>
+</body>
+</html>
