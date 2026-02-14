@@ -516,23 +516,23 @@ async def preguntar_contratos(request: Request, pregunta: str = Form(...)):
 @app.get("/config")
 def config_get(request: Request):
     user = usuario_actual(request)
-    empresa = get_empresa(user)
-    codigo = get_empresa_codigo(user)
-    if empresa and not codigo:
-    codigo = generar_codigo_empresa()
-    set_empresa_codigo(user, codigo)
     if not user:
         return RedirectResponse(url="/login", status_code=303)
+
+    empresa = get_empresa(user)
+    codigo = get_empresa_codigo(user)
+
+    if empresa and not codigo:
+        codigo = generar_codigo_empresa()
+        set_empresa_codigo(user, codigo)
 
     return templates.TemplateResponse("config.html", {
         "request": request,
         "empresa": empresa,
         "codigo": codigo,
         "email": get_email_alertas(user),
-        "empresa": get_empresa(user),
         "ok": False
     })
-
 
 
 @app.post("/config")
@@ -543,6 +543,7 @@ def config_post(request: Request, email: str = Form(""), empresa: str = Form("")
 
     set_email_alertas(user, email)
     set_empresa(user, empresa)
+
     codigo = get_empresa_codigo(user)
     if empresa and not codigo:
         codigo = generar_codigo_empresa()
@@ -555,7 +556,6 @@ def config_post(request: Request, email: str = Form(""), empresa: str = Form("")
         "empresa": empresa,
         "ok": True
     })
-
 
 
 # -----------------------------
