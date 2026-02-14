@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pypdf
+pytesseract
+pdf2image
+python-dateutil
+passlib
+jinja2
+itsdangerous
+yagmail
+requests
