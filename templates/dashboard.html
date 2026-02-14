@@ -59,8 +59,8 @@
       <form action="/subir_pdf/" method="post" enctype="multipart/form-data" class="row">
         <input type="file" name="file" accept="application/pdf" required />
         <button class="btn" type="submit">Subir PDF</button>
-        <a class="btn btn-secondary" href="/alertas_vencimiento/" style="display:inline-block; padding:10px 14px; border-radius:10px;">
-          Ver JSON (debug)
+        <a class="btn btn-secondary" href="/enviar_alertas/?dias=30" style="display:inline-block; padding:10px 14px; border-radius:10px;">
+          Enviar alertas (30 días)
         </a>
       </form>
 
@@ -92,6 +92,9 @@
               — tipo: {{ c.get("tipo","otro") }}
               {% if c.get("fecha_fin") %} — fin: {{ c.get("fecha_fin") }}{% endif %}
               {% if c.get("owner") %} — subido por: {{ c.get("owner") }}{% endif %}
+              {% if c.get("storage_path") %}
+                — <a href="/descargar/?path={{ c.get('storage_path') }}">Descargar</a>
+              {% endif %}
             </li>
           {% endfor %}
         </ul>
@@ -112,6 +115,7 @@
               <th>Vence el</th>
               <th>Días restantes</th>
               <th>Estado</th>
+              <th>PDF</th>
             </tr>
           </thead>
           <tbody>
@@ -131,6 +135,13 @@
                     <span class="pill pill-ok">OK</span>
                   {% endif %}
                 </td>
+                <td>
+                  {% if c.get("storage_path") %}
+                    <a href="/descargar/?path={{ c.get('storage_path') }}">Descargar</a>
+                  {% else %}
+                    <span class="muted">—</span>
+                  {% endif %}
+                    </td>
               </tr>
             {% endfor %}
           </tbody>
