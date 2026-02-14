@@ -174,6 +174,18 @@ def extraer_fecha_fin(texto: str):
 
     return None
 
+def extraer_fechas(texto: str):
+    patrones = r"\b(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})\b"
+    halladas = re.findall(patrones, texto)
+    fechas = []
+    for f in halladas:
+        try:
+            dt = parser.parse(f, dayfirst=True)
+            fechas.append(dt.date().isoformat())
+        except:
+            pass
+    return sorted(list(set(fechas)))
+
 
 def clasificar_contrato(texto: str):
     t = texto.lower()
