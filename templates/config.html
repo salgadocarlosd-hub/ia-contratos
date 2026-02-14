@@ -11,6 +11,10 @@
     <p style="color:green;">Guardado ✅</p>
   {% endif %}
 
+  {% if error %}
+    <p style="color:red;">{{ error }}</p>
+  {% endif %}
+
   <form action="/config" method="post">
 
     <label>Nombre de la empresa</label><br>

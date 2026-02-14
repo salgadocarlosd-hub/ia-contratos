@@ -153,6 +153,19 @@ def set_empresa(username: str, empresa: str):
     guardar_configs(cfg)
 
 
+def get_rol(username: str) -> str:
+    cfg = cargar_configs()
+    return (cfg.get(username, {}).get("rol") or "miembro").strip().lower()
+
+
+def set_rol(username: str, rol: str):
+    rol = (rol or "").strip().lower()
+    if rol not in ("admin", "miembro"):
+        rol = "miembro"
+    cfg = cargar_configs()
+    cfg.setdefault(username, {})["rol"] = rol
+    guardar_configs(cfg)
+
 import secrets
 import string
 
@@ -397,6 +410,12 @@ def registro_post(
     empresa_por_codigo = buscar_empresa_por_codigo(codigo_empresa)
     if empresa_por_codigo:
         set_empresa(username, empresa_por_codigo)
+        set_rol(username, "miembro")
+    else:
+        # si no se une con código, su empresa será la que ponga luego en config
+        # y será admin cuando cree/defina su empresa
+        set_rol(username, "admin")
+
 
     return RedirectResponse(url="/", status_code=303)
 
@@ -806,7 +825,20 @@ def config_post(request: Request, email: str = Form(""), empresa: str = Form("")
         return RedirectResponse(url="/login", status_code=303)
 
     set_email_alertas(user, email)
-    set_empresa(user, empresa)
+
+    # Solo admin puede cambiar/definir empresa
+    if empresa.strip():
+        if get_rol(user) != "admin":
+            return templates.TemplateResponse("config.html", {
+                "request": request,
+                "codigo": get_empresa_codigo(user),
+                "email": email,
+                "empresa": get_empresa(user),
+                "ok": False,
+                "error": "Solo un admin puede cambiar la empresa."
+            })
+        set_empresa(user, empresa)
+
 
     codigo = get_empresa_codigo(user)
     if empresa and not codigo:
