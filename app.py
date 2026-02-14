@@ -27,14 +27,17 @@ from supabase import create_client
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key="cambia-esto-por-una-clave-larga")
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+SUPABASE_URL = (os.environ.get("SUPABASE_URL") or "").strip()
+SUPABASE_SERVICE_ROLE_KEY = (os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
 
 supabase = None
 if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
     supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 else:
     print("⚠️ SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY no están configuradas en el entorno.")
+
+if SUPABASE_URL and not SUPABASE_URL.startswith("https://"):
+    print("⚠️ SUPABASE_URL no empieza por https://")
 
 BUCKET = "contratos"
 
