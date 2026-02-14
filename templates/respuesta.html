@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Respuesta</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; }
+    a { color:#2563eb; text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    pre { background:#f3f4f6; padding:12px; border-radius:10px; white-space:pre-wrap; }
+    .card { border:1px solid #e5e7eb; border-radius:12px; padding:16px; max-width: 980px; }
+    .muted { color:#6b7280; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <p class="muted"><a href="/">← Volver al panel</a></p>
+
+    <h2>Pregunta</h2>
+    <p>{{ pregunta }}</p>
+
+    <h2>Respuesta</h2>
+    <pre>{{ respuesta }}</pre>
+  </div>
+</body>
+</html>
