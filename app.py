@@ -114,6 +114,17 @@ def set_email_alertas(username: str, email: str):
     guardar_configs(cfg)
 
 
+def get_empresa(username: str):
+    cfg = cargar_configs()
+    return cfg.get(username, {}).get("empresa", "")
+
+
+def set_empresa(username: str, empresa: str):
+    cfg = cargar_configs()
+    cfg.setdefault(username, {})["empresa"] = empresa.strip()
+    guardar_configs(cfg)
+
+
 # -----------------------------
 # Helpers: registro contratos
 # -----------------------------
@@ -291,8 +302,11 @@ async def subir_pdf(request: Request, file: UploadFile = File(...)):
     tipo_contrato = clasificar_contrato(texto)
 
     registro = cargar_registro()
+    empresa = get_empresa(user) or "Mi empresa"
+
     registro.append({
         "owner": user,
+        "empresa": empresa,
         "carpeta": str(carpeta_usuario),
         "archivo_pdf": file.filename,
         "archivo_txt": salida.name,
@@ -451,22 +465,28 @@ def config_get(request: Request):
     return templates.TemplateResponse("config.html", {
         "request": request,
         "email": get_email_alertas(user),
+        "empresa": get_empresa(user),
         "ok": False
     })
 
 
+
 @app.post("/config")
-def config_post(request: Request, email: str = Form(...)):
+def config_post(request: Request, email: str = Form(""), empresa: str = Form("")):
     user = usuario_actual(request)
     if not user:
         return RedirectResponse(url="/login", status_code=303)
 
     set_email_alertas(user, email)
+    set_empresa(user, empresa)
+
     return templates.TemplateResponse("config.html", {
         "request": request,
         "email": email,
+        "empresa": empresa,
         "ok": True
     })
+
 
 
 # -----------------------------
