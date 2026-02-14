@@ -151,19 +151,6 @@ def extraer_texto_pdf(ruta_pdf):
         return ""
 
 
-def extraer_fechas(texto: str):
-    patrones = r"\b(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})\b"
-    halladas = re.findall(patrones, texto)
-    fechas = []
-    for f in halladas:
-        try:
-            dt = parser.parse(f, dayfirst=True)
-            fechas.append(dt.date().isoformat())
-        except:
-            pass
-    return sorted(list(set(fechas)))
-
-
 def extraer_fecha_fin(texto: str):
     t = " ".join(texto.split())
     claves = r"(fecha\s*(de)?\s*(finalizaci[oó]n|fin)|finalizaci[oó]n|vencimiento|vigencia\s*hasta|caduca|expira)"
@@ -186,6 +173,24 @@ def extraer_fecha_fin(texto: str):
                 pass
 
     return None
+
+
+def clasificar_contrato(texto: str):
+    t = texto.lower()
+
+    reglas = {
+        "alquiler": ["arrendamiento", "alquiler", "arrendador"],
+        "seguro": ["seguro", "aseguradora", "póliza"],
+        "servicios": ["prestación de servicios", "servicios profesionales"],
+        "laboral": ["contrato de trabajo", "empleado", "empresa"],
+        "préstamo": ["préstamo", "financiación", "interés"]
+    }
+
+    for tipo, palabras in reglas.items():
+        if any(p in t for p in palabras):
+            return tipo
+
+    return "otro"
 
 
 # -----------------------------
@@ -271,6 +276,7 @@ async def subir_pdf(request: Request, file: UploadFile = File(...)):
 
     fechas = extraer_fechas(texto)
     fecha_fin = extraer_fecha_fin(texto)
+    tipo_contrato = clasificar_contrato(texto)
 
     registro = cargar_registro()
     registro.append({
@@ -280,6 +286,7 @@ async def subir_pdf(request: Request, file: UploadFile = File(...)):
         "archivo_txt": salida.name,
         "fechas_detectadas": fechas,
         "fecha_fin_detectada": fecha_fin,
+        "tipo": tipo_contrato,
         "subido_en": datetime.now().isoformat(timespec="seconds")
     })
     guardar_registro(registro)
@@ -366,6 +373,58 @@ def alertas_vencimiento(dias: int = 30, owner: str | None = None):
         "alertas": alertas,
         "limite": limite.isoformat()
     }
+
+
+@app.post("/preguntar_contratos/")
+async def preguntar_contratos(request: Request, pregunta: str = Form(...)):
+    user = usuario_actual(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
+
+    registro = cargar_registro()
+    contratos_usuario = [c for c in registro if c.get("owner") == user]
+
+    pregunta_l = pregunta.lower()
+    hoy = datetime.now().date()
+
+    # detectar "en X días"
+    dias = None
+    m = re.search(r"(\d+)\s*d[ií]as", pregunta_l)
+    if m:
+        dias = int(m.group(1))
+
+    resultados = []
+
+    for c in contratos_usuario:
+        fecha = c.get("fecha_fin_detectada")
+        if not fecha:
+            continue
+
+        fin = datetime.fromisoformat(fecha).date()
+
+        incluir = True
+
+        if dias:
+            incluir = fin <= (hoy + timedelta(days=dias))
+
+        if "alquiler" in pregunta_l:
+            incluir = incluir and c.get("tipo") == "alquiler"
+
+        if incluir:
+            resultados.append(
+                f"{c.get('archivo_pdf')} ({c.get('tipo')}) vence el {fecha}"
+            )
+
+    if not resultados:
+        respuesta = "No encontré coincidencias."
+    else:
+        respuesta = "\n".join(resultados)
+
+    return templates.TemplateResponse("respuesta.html", {
+        "request": request,
+        "pregunta": pregunta,
+        "respuesta": respuesta
+    })
 
 
 # -----------------------------
