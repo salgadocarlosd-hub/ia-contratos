@@ -15,6 +15,9 @@ from dateutil import parser
 from passlib.context import CryptContext
 import yagmail
 
+import secrets
+import string
+
 from io import BytesIO
 from supabase import create_client
 from dotenv import load_dotenv
@@ -61,15 +64,25 @@ pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 CARPETA_DOCS = Path("docs")
 CARPETA_DOCS.mkdir(exist_ok=True)
 
-USUARIOS = Path("usuarios.json")
-CONFIGS = Path("configs.json")
-
 
 # -----------------------------
 # Helpers: auth
 # -----------------------------
 def usuario_actual(request: Request):
     return request.session.get("user")
+
+
+def insertar_usuario_db(username: str, password_hash: str, rol: str = "admin"):
+    if supabase is None:
+        raise RuntimeError("Supabase no disponible")
+    supabase.table("usuarios_app").insert({
+        "username": username,
+        "password_hash": password_hash,
+        "empresa": "",
+        "rol": rol,
+        "empresa_codigo": "",
+        "email_alertas": ""
+    }).execute()
 
 
 def normalizar_password(p: str) -> str:
@@ -83,109 +96,102 @@ def normalizar_password(p: str) -> str:
     b = p.encode("utf-8")[:72]
     return b.decode("utf-8", errors="ignore")
 
-def cargar_usuarios():
-    if USUARIOS.exists():
-        return json.loads(USUARIOS.read_text(encoding="utf-8"))
-    return []
 
-
-def guardar_usuarios(data):
-    USUARIOS.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+def normalizar_empresa(nombre: str) -> str:
+    # Mantiene el formato que ya estás usando como “verdad”
+    # (puedes cambiar la lógica luego a slug si quieres)
+    return (nombre or "").strip()
 
 
 def crear_usuario(username: str, password: str):
-    usuarios = cargar_usuarios()
-    if any(u["username"] == username for u in usuarios):
+    username = (username or "").strip()
+    if not username:
+        return False
+
+    if supabase is None:
+        raise RuntimeError("Supabase no disponible")
+
+    if obtener_usuario_db(username):
         return False
 
     password = normalizar_password(password)
-
-    usuarios.append({
-        "username": username,
-        "password_hash": pwd_context.hash(password)
-    })
-    guardar_usuarios(usuarios)
+    insertar_usuario_db(username, pwd_context.hash(password), rol="admin")
     return True
 
 
+
 def validar_usuario(username: str, password: str):
-    usuarios = cargar_usuarios()
-    u = next((x for x in usuarios if x["username"] == username), None)
+    u = obtener_usuario_db(username)
     if not u:
         return False
 
     password = normalizar_password(password)
-    return pwd_context.verify(password, u["password_hash"])
+    return pwd_context.verify(password, u.get("password_hash", ""))
 
 
 # -----------------------------
-# Helpers: configs (email alertas)
+# Helpers: usuario/config en Supabase (usuarios_app)
 # -----------------------------
-def cargar_configs():
-    if CONFIGS.exists():
-        return json.loads(CONFIGS.read_text(encoding="utf-8"))
-    return {}
-
-
-def guardar_configs(data):
-    CONFIGS.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+def obtener_usuario_db(username: str):
+    if supabase is None:
+        return None
+    res = supabase.table("usuarios_app").select("*").eq("username", username).limit(1).execute()
+    return (res.data or [None])[0]
 
 
 def get_email_alertas(username: str):
-    cfg = cargar_configs()
-    return cfg.get(username, {}).get("email_alertas")
+    u = obtener_usuario_db(username)
+    return (u or {}).get("email_alertas")
 
 
 def set_email_alertas(username: str, email: str):
-    cfg = cargar_configs()
-    cfg.setdefault(username, {})["email_alertas"] = email.strip()
-    guardar_configs(cfg)
+    if supabase is None:
+        return
+    supabase.table("usuarios_app").update({"email_alertas": (email or "").strip()}).eq("username", username).execute()
 
 
 def get_empresa(username: str):
-    cfg = cargar_configs()
-    return cfg.get(username, {}).get("empresa", "")
+    u = obtener_usuario_db(username)
+    return (u or {}).get("empresa", "") or ""
 
 
 def set_empresa(username: str, empresa: str):
-    cfg = cargar_configs()
-    cfg.setdefault(username, {})["empresa"] = empresa.strip()
-    guardar_configs(cfg)
+    if supabase is None:
+        return
+    empresa_clean = normalizar_empresa(empresa)
+    supabase.table("usuarios_app").update({"empresa": empresa_clean}).eq("username", username).execute()
+
 
 
 def get_rol(username: str) -> str:
-    cfg = cargar_configs()
-    rol = cfg.get(username, {}).get("rol")
-
-    if not rol:
-        # Si no tiene rol definido, lo consideramos admin por defecto
-        set_rol(username, "admin")
-        return "admin"
-
-    return rol.strip().lower()
+    u = obtener_usuario_db(username)
+    rol = ((u or {}).get("rol") or "").strip().lower()
+    if rol not in ("admin", "miembro"):
+        rol = "admin"
+        if supabase is not None:
+            supabase.table("usuarios_app").update({"rol": rol}).eq("username", username).execute()
+    return rol
 
 
 def set_rol(username: str, rol: str):
     rol = (rol or "").strip().lower()
     if rol not in ("admin", "miembro"):
         rol = "miembro"
-    cfg = cargar_configs()
-    cfg.setdefault(username, {})["rol"] = rol
-    guardar_configs(cfg)
+    if supabase is None:
+        return
+    supabase.table("usuarios_app").update({"rol": rol}).eq("username", username).execute()
 
-import secrets
-import string
 
 
 def get_empresa_codigo(username: str):
-    cfg = cargar_configs()
-    return cfg.get(username, {}).get("empresa_codigo", "")
+    u = obtener_usuario_db(username)
+    return (u or {}).get("empresa_codigo", "") or ""
 
 
 def set_empresa_codigo(username: str, codigo: str):
-    cfg = cargar_configs()
-    cfg.setdefault(username, {})["empresa_codigo"] = codigo.strip().upper()
-    guardar_configs(cfg)
+    if supabase is None:
+        return
+    supabase.table("usuarios_app").update({"empresa_codigo": (codigo or "").strip().upper()}).eq("username", username).execute()
 
 
 def generar_codigo_empresa():
@@ -194,12 +200,12 @@ def generar_codigo_empresa():
 
 
 def buscar_empresa_por_codigo(codigo: str):
-    cfg = cargar_configs()
+    if supabase is None:
+        return None
     codigo = (codigo or "").strip().upper()
-    for user, data in cfg.items():
-        if data.get("empresa_codigo", "").upper() == codigo:
-            return data.get("empresa")
-    return None
+    res = supabase.table("usuarios_app").select("empresa").eq("empresa_codigo", codigo).limit(1).execute()
+    row = (res.data or [None])[0]
+    return (row or {}).get("empresa")
 
 # -----------------------------
 # Helpers: registro contratos
@@ -453,7 +459,7 @@ def dashboard(request: Request):
     else:
         mensaje = None
 
-    empresa = get_empresa(user) or "Mi empresa"
+    empresa = get_empresa(user) or "MiEmpresa"
     rol = get_rol(user)
 
     if supabase is None:
@@ -466,15 +472,21 @@ def dashboard(request: Request):
             "mensaje": "⚠️ Supabase no configurado."
         })
 
-    res = (
+    q = (
         supabase
         .table("contratos")
         .select("archivo_pdf,fecha_fin,tipo,creado_en,owner,storage_path")
         .eq("empresa", empresa)
         .order("creado_en", desc=True)
         .limit(50)
-        .execute()
     )
+
+    # Si NO es admin, solo ve sus contratos
+    if rol != "admin":
+        q = q.eq("owner", user)
+
+    res = q.execute()
+
 
     items = res.data or []
 
@@ -542,7 +554,9 @@ async def subir_pdf(request: Request, file: UploadFile = File(...)):
         if "pdf" not in ct and not (file.filename or "").lower().endswith(".pdf"):
             return RedirectResponse(url="/?ok=0&err=" + quote("Solo se permiten archivos PDF"), status_code=303)
 
-        empresa = get_empresa(user) or "Mi empresa"
+        u = obtener_usuario_db(user) or {}
+        empresa = normalizar_empresa(u.get("empresa")) or "MiEmpresa"
+
 
         # Evitar duplicado por nombre para este usuario
         res_dup = (
@@ -612,7 +626,8 @@ async def subir_pdf(request: Request, file: UploadFile = File(...)):
             "archivo_pdf": file.filename,
             "storage_path": storage_path,
             "fecha_fin": fecha_fin,
-            "tipo": tipo_contrato
+            "tipo": tipo_contrato,
+            "creado_en": datetime.utcnow().isoformat()
         }).execute()
 
         logger.info("Subida PDF OK user=%s storage_path=%s", user, storage_path)
@@ -632,7 +647,7 @@ def descargar_pdf(request: Request, path: str):
     if supabase is None:
         return RedirectResponse(url="/?ok=0&err=" + quote("Supabase no disponible"), status_code=303)
 
-    empresa = get_empresa(user) or "Mi empresa"
+    empresa = get_empresa(user) or "MiEmpresa"
 
     # Seguridad: comprobar que ese storage_path pertenece a este usuario/empresa
     try:
@@ -678,7 +693,7 @@ def vencen_en(request: Request, dias: int = 30):
             "resultados": []
         }
 
-    empresa = get_empresa(user) or "Mi empresa"
+    empresa = get_empresa(user) or "MiEmpresa"
 
     # Solo devuelve del usuario actual (seguridad)
     alertas = obtener_alertas_supabase(empresa=empresa, dias=dias, owner=user)
@@ -812,11 +827,26 @@ def config_get(request: Request):
     if not user:
         return RedirectResponse(url="/login", status_code=303)
 
-    empresa = get_empresa(user)
-    codigo = get_empresa_codigo(user)
-    rol = get_rol(user)
+    if supabase is None:
+        return templates.TemplateResponse("config.html", {
+            "request": request,
+            "empresa": "",
+            "codigo": "",
+            "email": "",
+            "rol": "",
+            "ok": False,
+            "error": "Supabase no disponible"
+        })
 
-    if empresa and not codigo:
+    # Leer usuario UNA vez
+    u = obtener_usuario_db(user) or {}
+    empresa = (u.get("empresa") or "")
+    codigo = (u.get("empresa_codigo") or "")
+    email = (u.get("email_alertas") or "")
+    rol = (u.get("rol") or "admin").strip().lower()
+
+    # Si es admin y tiene empresa pero aún no tiene código, se lo generamos
+    if rol == "admin" and empresa and not codigo:
         codigo = generar_codigo_empresa()
         set_empresa_codigo(user, codigo)
 
@@ -824,10 +854,12 @@ def config_get(request: Request):
         "request": request,
         "empresa": empresa,
         "codigo": codigo,
-        "email": get_email_alertas(user),
+        "email": email,
         "rol": rol,
-        "ok": False
+        "ok": False,
+        "error": None
     })
+
 
 
 @app.post("/config")
@@ -836,41 +868,61 @@ def config_post(request: Request, email: str = Form(""), empresa: str = Form("")
     if not user:
         return RedirectResponse(url="/login", status_code=303)
 
+    if supabase is None:
+        return templates.TemplateResponse("config.html", {
+            "request": request,
+            "empresa": "",
+            "codigo": "",
+            "email": email or "",
+            "rol": "",
+            "ok": False,
+            "error": "Supabase no disponible"
+        })
+
+    # Leer usuario UNA vez
+    u = obtener_usuario_db(user) or {}
+    rol = (u.get("rol") or "admin").strip().lower()
+
+    # Guardar email (siempre permitido)
     set_email_alertas(user, email)
 
-    rol = get_rol(user)
+    empresa_in = (empresa or "").strip()
 
-    # Solo admin puede cambiar/definir empresa
-    empresa = (empresa or "").strip()
-    if empresa:
+    # Empresa solo admin
+    if empresa_in:
         if rol != "admin":
-            # No cambiar empresa si no es admin
+            # devolvemos lo que ya hay en DB
+            u2 = obtener_usuario_db(user) or {}
             return templates.TemplateResponse("config.html", {
                 "request": request,
-                "codigo": get_empresa_codigo(user),
-                "email": email,
-                "empresa": get_empresa(user),
+                "empresa": u2.get("empresa") or "",
+                "codigo": u2.get("empresa_codigo") or "",
+                "email": u2.get("email_alertas") or (email or ""),
                 "rol": rol,
                 "ok": False,
                 "error": "Solo un admin puede cambiar la empresa."
             })
-        set_empresa(user, empresa)
+        set_empresa(user, empresa_in)
 
+    # Releer para devolver valores consistentes
+    u3 = obtener_usuario_db(user) or {}
+    empresa_final = (u3.get("empresa") or "")
+    codigo_final = (u3.get("empresa_codigo") or "")
+    email_final = (u3.get("email_alertas") or "")
 
-
-    codigo = get_empresa_codigo(user)
-    if empresa and not codigo:
-        codigo = generar_codigo_empresa()
-        set_empresa_codigo(user, codigo)
+    # Si ya hay empresa y no hay código, generarlo
+    if rol == "admin" and empresa_final and not codigo_final:
+        codigo_final = generar_codigo_empresa()
+        set_empresa_codigo(user, codigo_final)
 
     return templates.TemplateResponse("config.html", {
         "request": request,
-        "codigo": get_empresa_codigo(user),
-        "email": email,
-        "empresa": empresa,
+        "empresa": empresa_final,
+        "codigo": codigo_final,
+        "email": email_final,
         "rol": rol,
         "ok": True,
-        "error": none
+        "error": None
     })
 
 
