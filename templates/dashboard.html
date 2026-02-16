@@ -21,6 +21,33 @@
   --border:#374151;
   --shadow: 0 10px 30px rgba(0,0,0,.20);
 }
+  /* Scroll profesional en tablas */
+.table-scroll{
+  max-height: 340px; /* aprox 5-6 filas */
+  overflow-y: auto;
+  border-radius: 12px;
+}
+
+/* Scroll más fino y moderno */
+.table-scroll::-webkit-scrollbar{
+  width: 8px;
+}
+.table-scroll::-webkit-scrollbar-thumb{
+  background: rgba(59,130,246,.6);
+  border-radius: 10px;
+}
+.table-scroll::-webkit-scrollbar-track{
+  background: transparent;
+}
+
+/* Header fijo dentro del scroll */
+.table-scroll thead th{
+  position: sticky;
+  top: 0;
+  background: rgba(37,44,59,.98);
+  backdrop-filter: blur(6px);
+  z-index: 2;
+}
 
 body{
   margin:0;
@@ -305,6 +332,55 @@ hr.sep{
     </form>
   </div>
 
+         <!-- Actividad reciente -->
+        <div class="card">
+          <div class="card-title">
+            <h2>Actividad reciente</h2>
+            <span class="small">Últimos movimientos en la cuenta</span>
+          </div>
+
+          {% if actividad and actividad|length > 0 %}
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Usuario</th>
+                <th>Acción</th>
+                <th>Detalle</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for a in actividad %}
+              <tr>
+                <td>{{ (a.created_at|string)[:19].replace('T',' ') }}</td>
+                <td><b>{{ a.actor_username }}</b></td>
+                <td>
+                  {% if a.action == "upload" %}
+                    <span class="badge ok">Subió</span>
+                  {% elif a.action == "delete" %}
+                    <span class="badge warn">Eliminó</span>
+                  {% elif a.action == "restore" %}
+                    <span class="badge ok">Restauró</span>
+                  {% elif a.action == "purge" %}
+                    <span class="badge danger">Borrado definitivo</span>
+                   {% elif a.action == "config_update" %}
+                     <span class="badge warn">Configuración</span>
+                  {% else %}
+                    <span class="badge">{{ a.action }}</span>
+                  {% endif %}
+                </td>
+                <td>{{ a.entity_type }} {{ a.entity_id or "" }}</td>
+               </tr>
+               {% endfor %}
+            </tbody>
+           </table>
+           {% else %}
+             <div class="sub">Aún no hay actividad registrada.</div>
+          {% endif %}
+        </div>
+
+
   <!-- 2 columnas: Riesgo + Gráfico -->
   <div class="grid-2">
 
@@ -316,6 +392,7 @@ hr.sep{
       </div>
 
       {% if vencen_7 and vencen_7|length > 0 %}
+
         <table>
           <thead>
             <tr>
@@ -334,6 +411,7 @@ hr.sep{
             {% endfor %}
           </tbody>
         </table>
+
       {% else %}
         <div class="sub">Sin vencimientos críticos.</div>
       {% endif %}
@@ -413,6 +491,7 @@ hr.sep{
       <a class="filter-chip {% if tipo_actual=='otro' %}active{% endif %}" href="/?tipo=otro">Otro</a>
     </div>
 
+      <div class="table-scroll">
     <table>
       <thead>
         <tr>
@@ -455,6 +534,7 @@ hr.sep{
         {% endfor %}
       </tbody>
     </table>
+     </div>
 
     {% if todos|length == 0 %}
       <div class="sub" style="margin-top:10px;">No hay contratos para este filtro.</div>
