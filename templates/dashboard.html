@@ -1,4 +1,4 @@
-<!doctype html>
+<!doctype html> 
 <html lang="es">
 <head>
 <meta charset="utf-8" />
@@ -288,6 +288,21 @@ hr.sep{
         <div class="kpi-label">Sin fecha</div>
       </div>
     </div>
+  </div>
+
+  <!-- NUEVO: Subida de PDF (ancho completo, debajo KPIs) -->
+  <div class="card">
+    <div class="card-title">
+      <h2>Subir contrato (PDF)</h2>
+      <span class="small">Detectamos fecha de fin y tipo automáticamente</span>
+    </div>
+
+    <form action="/subir_pdf/" method="post" enctype="multipart/form-data"
+          style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+      <input type="file" name="file" accept="application/pdf" required style="max-width:340px;">
+      <button class="btn" type="submit">Subir PDF</button>
+      <span class="small">Máx. 20MB · Se guardará en tu empresa</span>
+    </form>
   </div>
 
   <!-- 2 columnas: Riesgo + Gráfico -->

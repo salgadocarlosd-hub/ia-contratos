@@ -27,6 +27,9 @@ from io import BytesIO
 from supabase import create_client
 from dotenv import load_dotenv
 
+import base64
+import json
+
 load_dotenv()
 
 
@@ -91,6 +94,26 @@ CARPETA_DOCS.mkdir(exist_ok=True)
 def usuario_actual(request: Request):
     return request.session.get("user")
 
+
+def get_auth_user_id_from_session(request: Request) -> str | None:
+    token = request.session.get("sb_access_token")
+    if not token:
+        return None
+
+    try:
+        # JWT = header.payload.signature
+        parts = token.split(".")
+        if len(parts) < 2:
+            return None
+
+        payload_b64 = parts[1]
+        # padding base64
+        payload_b64 += "=" * (-len(payload_b64) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(payload_b64).decode("utf-8"))
+
+        return payload.get("sub")  # auth uid
+    except Exception:
+        return None
 
 def insertar_usuario_db(username: str, password_hash: str, rol: str = "admin"):
     if supabase is None:
@@ -471,12 +494,19 @@ def exportar_excel(request: Request):
     sb = supabase_user_client(request)
     empresa_id = get_empresa_id(user)
 
-    res = (
+    auth_user_id = get_auth_user_id_from_session(request)
+
+    query = (
         sb.table("contratos")
         .select("archivo_pdf,tipo,fecha_fin,owner")
         .eq("empresa_id", empresa_id)
-        .execute()
     )
+
+    if get_rol(user) != "admin":
+        query = query.eq("owner_auth_id", auth_user_id)
+
+    res = query.execute()
+
 
     output = StringIO()
     writer = csv.writer(output)
@@ -642,7 +672,32 @@ def registro_post(
                     "error": "El código de empresa no existe"
                 })
         else:
+            # CREAR EMPRESA AUTOMÁTICAMENTE
+            nombre_empresa = username  # puedes cambiar esto luego
+
+            res_new = supabase_service.table("empresas").insert({
+                "nombre": nombre_empresa
+            }).execute()
+
+            new_row = (res_new.data or [None])[0]
+            if not new_row:
+                return templates.TemplateResponse("registro.html", {
+                    "request": request,
+                    "error": "No se pudo crear la empresa"
+                })
+
+            empresa_id = new_row["id"]
+
+            # Generar código empresa
+            codigo_generado = generar_codigo_empresa()
+
+            supabase_service.table("empresas").update({
+                "codigo": codigo_generado
+            }).eq("id", empresa_id).execute()
+
+            rol = "admin"
             mensaje_registro = "Se ha creado tu empresa y eres administrador"
+
 
         supabase_service.table("usuarios_app").insert({
             "username": username,
@@ -685,14 +740,13 @@ def logout(request: Request):
     return RedirectResponse(url="/login", status_code=303)
 
 
-from fastapi.responses import JSONResponse
+DEBUG = (os.environ.get("DEBUG", "0") == "1")
 
 @app.get("/__debug_session")
 def debug_session(request: Request):
-    # OJO: endpoint temporal. Luego lo borramos.
-    return JSONResponse({
-        "session": dict(request.session)
-    })
+    if not DEBUG:
+        return RedirectResponse(url="/", status_code=303)
+    return JSONResponse({"session": dict(request.session)})
 
 # -----------------------------
 # Dashboard
@@ -726,6 +780,8 @@ def dashboard(request: Request, tipo: str = None):
     rol = get_rol(user)
     empresa_id = get_empresa_id(user)
     email_alertas = get_email_alertas(user)
+    auth_user_id = get_auth_user_id_from_session(request)
+
     empresa_row = obtener_empresa_db(empresa_id) if empresa_id else None
 
     # 🔒 Forzar configuración si admin no completó datos
@@ -735,14 +791,19 @@ def dashboard(request: Request, tipo: str = None):
 
     # --- Query contratos (RLS) ---
     try:
-        res = (
+        query = (
             sb.table("contratos")
-            .select("id,archivo_pdf,fecha_fin,tipo,creado_en,owner,storage_path")
+            .select("id,archivo_pdf,fecha_fin,tipo,creado_en,owner,owner_auth_id,storage_path")
             .eq("empresa_id", empresa_id)
-            .order("creado_en", desc=True)
-            .limit(200)
-            .execute()
         )
+
+        if rol != "admin":
+            if not auth_user_id:
+                request.session.clear()
+                return RedirectResponse(url="/login", status_code=303)
+            query = query.eq("owner_auth_id", auth_user_id)
+
+        res = query.order("creado_en", desc=True).limit(200).execute()
         items = res.data or []
 
     except Exception as e:
@@ -914,6 +975,10 @@ async def subir_pdf(request: Request, file: UploadFile = File(...)):
         if not empresa_id:
             return RedirectResponse(url="/?ok=0&err=" + quote("No tienes empresa asignada"), status_code=303)
 
+        auth_user_id = get_auth_user_id_from_session(request)
+        if not auth_user_id:
+            return RedirectResponse(url="/?ok=0&err=" + quote("Sesión inválida (sin auth_user_id)"), status_code=303)
+
         erow = obtener_empresa_db(empresa_id) or {}
         empresa_nombre = erow.get("nombre", "MiEmpresa")
 
@@ -948,7 +1013,7 @@ async def subir_pdf(request: Request, file: UploadFile = File(...)):
             return RedirectResponse(url="/?ok=0&err=" + quote("El archivo supera el límite de 20MB"), status_code=303)
 
         # Ruta en Storage
-        storage_path = f"{empresa_slug}/{user_slug}/{fname}"
+        storage_path = f"{empresa_id}/{auth_user_id}/{fname}"
 
         # Subir a Supabase Storage
         # (Esto no pasa por RLS como las tablas; lo dejamos tal cual para no romper)
@@ -975,13 +1040,15 @@ async def subir_pdf(request: Request, file: UploadFile = File(...)):
         # Insert en Postgres (CON RLS)
         sb.table("contratos").insert({
             "empresa_id": empresa_id,
-            "owner": user,
+            "owner_auth_id": auth_user_id,
+            "owner": user,  # lo dejo para mostrar en UI/soporte (opcional)
             "archivo_pdf": fname,
             "storage_path": storage_path,
             "fecha_fin": fecha_fin,
             "tipo": tipo_contrato,
             "creado_en": datetime.utcnow().isoformat()
         }).execute()
+
 
         logger.info("Subida PDF OK user=%s storage_path=%s", user, storage_path)
         return RedirectResponse(url="/?ok=1", status_code=303)
@@ -1326,6 +1393,8 @@ async def preguntar_contratos(request: Request, pregunta: str = Form(...)):
     if sb is None:
         return RedirectResponse(url="/login", status_code=303)
 
+    auth_user_id = get_auth_user_id_from_session(request)
+
     if not empresa_id:
         return RedirectResponse(url="/config", status_code=303)
 
@@ -1401,7 +1470,10 @@ async def preguntar_contratos(request: Request, pregunta: str = Form(...)):
     )
 
     if rol != "admin":
-        query = query.eq("owner", user)
+        if not auth_user_id:
+            request.session.clear()
+            return RedirectResponse(url="/login", status_code=303)
+        query = query.eq("owner_auth_id", auth_user_id)
 
     if tipo_filtro:
         query = query.eq("tipo", tipo_filtro)
