@@ -12,3 +12,4 @@ requests
 python-multipart
 supabase
 python-dotenv
+reportlab
