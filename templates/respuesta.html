@@ -3,25 +3,244 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Respuesta</title>
+  <title>Resultado</title>
+
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; }
-    a { color:#2563eb; text-decoration:none; }
-    a:hover { text-decoration:underline; }
-    pre { background:#f3f4f6; padding:12px; border-radius:10px; white-space:pre-wrap; }
-    .card { border:1px solid #e5e7eb; border-radius:12px; padding:16px; max-width: 980px; }
-    .muted { color:#6b7280; }
+    :root{
+      --bg:#1e2430;
+      --card:#252c3b;
+      --card2:#2d3547;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --border:#374151;
+      --primary:#3b82f6;
+      --danger:#ef4444;
+      --success:#22c55e;
+      --warning:#f59e0b;
+    }
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial;
+      background:var(--bg);
+      color:var(--text);
+    }
+    /* ✅ ancho como antes */
+    .wrap{
+      max-width:1400px;
+      margin:28px auto;
+      padding:0 22px;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:18px;
+      overflow:hidden; /* evita que la tabla “se salga” */
+    }
+    h1{margin:0 0 10px;font-size:22px;}
+    .muted{color:var(--muted);font-size:13px;}
+    .topline{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:flex-end;
+      margin-bottom:14px;
+    }
+    a{color:var(--primary);text-decoration:none;}
+    a:hover{text-decoration:underline;}
+
+    /* ✅ tabla estable, pero sin "desaparecer" columnas */
+    .table-wrap{
+      width:100%;
+      overflow:auto; /* si hace falta, scroll horizontal en pantallas pequeñas */
+      border-radius:12px;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:14px;
+      min-width:980px; /* clave: evita que se aplaste */
+      table-layout:auto; /* ✅ mejor que fixed aquí */
+    }
+
+    th,td{
+      padding:12px 10px;
+      border-bottom:1px solid var(--border);
+      text-align:left;
+      font-size:14px;
+      vertical-align:middle;
+      white-space:nowrap;
+    }
+    th{
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      color:var(--muted);
+    }
+
+    /* ✅ Documento siempre visible */
+    td.doc{
+      font-weight:700;
+      white-space:normal;         /* permite 2 líneas si hace falta */
+      line-height:1.25;
+    }
+    .doc-sub{
+      display:block;
+      color:var(--muted);
+      font-weight:600;
+      font-size:12px;
+      margin-top:4px;
+      word-break:break-word;
+    }
+
+    td.center{text-align:center;white-space:nowrap;}
+    td.right{text-align:right;}
+
+    .badge{
+      display:inline-block;
+      padding:5px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      white-space:nowrap;
+    }
+    .b-ok{background:rgba(34,197,94,.15);color:var(--success);}
+    .b-warn{background:rgba(245,158,11,.15);color:var(--warning);}
+    .b-bad{background:rgba(239,68,68,.15);color:var(--danger);}
+
+    .actions{
+      display:flex;
+      gap:8px;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+      white-space:nowrap;
+    }
+    .btn{
+      display:inline-block;
+      border:0;
+      border-radius:8px;
+      padding:7px 12px;
+      font-size:13px;
+      font-weight:800;
+      cursor:pointer;
+      text-decoration:none;
+    }
+    .btn-primary{background:var(--primary);color:white;}
+    .btn-danger{background:var(--danger);color:white;}
+    .btn-ghost{
+      background:transparent;
+      color:var(--primary);
+      padding:0;
+      font-weight:700;
+    }
+
+    /* ✅ Ajuste: en pantallas estrechas ponemos Fecha debajo del Documento, sin descuadrar */
+    @media (max-width: 900px){
+      .wrap{padding:0 14px;}
+      table{min-width:760px;}
+    }
   </style>
 </head>
+
 <body>
-  <div class="card">
-    <p class="muted"><a href="/">← Volver al panel</a></p>
+  <div class="wrap">
+    <div class="card">
+      <div class="topline">
+        <div>
+          <h1>Resultado de la consulta</h1>
+          <div class="muted"><b>Pregunta:</b> {{ pregunta }}</div>
+          <div class="muted" style="margin-top:6px;">{{ resumen }}</div>
+        </div>
+        <div>
+          <a class="btn-ghost" href="/">← Volver al panel</a>
+        </div>
+      </div>
 
-    <h2>Pregunta</h2>
-    <p>{{ pregunta }}</p>
+      {% if resultados and resultados|length > 0 %}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:42%;">Documento</th>
+                <th style="width:12%;">Tipo</th>
+                <th style="width:14%;">Fecha</th>
+                <th style="width:12%;">Estado</th>
+                <th style="width:8%;">Días</th>
+                <th class="right" style="width:12%;">Acciones</th>
+              </tr>
+            </thead>
 
-    <h2>Respuesta</h2>
-    <pre>{{ respuesta }}</pre>
+            <tbody>
+              {% for r in resultados %}
+                <tr>
+                  <td class="doc">
+                    {{ r.archivo }}
+                    {% if r.owner %}
+                      <span class="doc-sub">Responsable: {{ r.owner }}</span>
+                    {% endif %}
+                  </td>
+
+                  <td>{{ r.tipo }}</td>
+
+                  <td>
+                    {% if r.fecha %}
+                      {{ r.fecha }}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    {% if r.estado == "Vencido" %}
+                      <span class="badge b-bad">Vencido</span>
+                    {% elif r.estado == "Próximo" %}
+                      <span class="badge b-warn">Próximo</span>
+                    {% else %}
+                      <span class="badge b-ok">Activo</span>
+                    {% endif %}
+                  </td>
+
+                  <td class="center">
+                    {% if r.dias is not none %}
+                      {{ r.dias }}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </td>
+
+                  <td class="right">
+                    <div class="actions">
+                      {% if r.storage_path %}
+                        <a class="btn btn-primary" href="/descargar/?path={{ r.storage_path }}">Descargar</a>
+                      {% endif %}
+
+                      {% if rol == "admin" %}
+                        <form method="post" action="/admin/borrar_contrato" style="margin:0;">
+                          <input type="hidden" name="contrato_id" value="{{ r.id }}">
+                          <button class="btn btn-danger" type="submit"
+                            onclick="return confirm('¿Eliminar este contrato? Se moverá a la papelera.')">
+                            Eliminar
+                          </button>
+                        </form>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+
+          </table>
+        </div>
+      {% else %}
+        <div class="muted" style="margin-top:14px;">No hay resultados para mostrar.</div>
+      {% endif %}
+
+      <div style="margin-top:14px;">
+        <a class="btn-ghost" href="/">← Volver al panel</a>
+      </div>
+    </div>
   </div>
 </body>
 </html>

@@ -1,160 +1,514 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Panel de contratos</title>
-  <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; color:#111; }
-    a { color:#2563eb; text-decoration:none; }
-    a:hover { text-decoration:underline; }
-    .topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:18px; }
-    .card { border:1px solid #e5e7eb; border-radius:12px; padding:16px; background:#fff; }
-    .grid { display:grid; grid-template-columns: 1fr; gap:16px; max-width: 980px; }
-    .title { font-size:28px; font-weight:800; margin: 0 0 8px; }
-    .subtitle { margin:0; color:#374151; }
-    .btn { border:1px solid #d1d5db; background:#111827; color:white; padding:10px 14px; border-radius:10px; cursor:pointer; }
-    .btn:hover { filter:brightness(1.05); }
-    .btn-secondary { background:#fff; color:#111827; }
-    .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
-    input[type="file"] { border:1px solid #d1d5db; padding:8px; border-radius:10px; background:#fff; }
-    table { width:100%; border-collapse: collapse; }
-    th, td { text-align:left; padding:10px 12px; border-bottom:1px solid #e5e7eb; }
-    th { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:#6b7280; }
-    .pill { display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; border:1px solid #e5e7eb; }
-    .pill-danger { background:#fee2e2; border-color:#fecaca; color:#991b1b; }
-    .pill-warn { background:#ffedd5; border-color:#fed7aa; color:#9a3412; }
-    .pill-ok { background:#dcfce7; border-color:#bbf7d0; color:#166534; }
-    .muted { color:#6b7280; }
-    .msg { margin-top:10px; padding:10px 12px; border-radius:10px; border:1px solid #e5e7eb; background:#f9fafb; }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Panel empresarial</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root{
+  --bg:#1e2430;
+  --card:#252c3b;
+  --card-light:#2d3547;
+  --text:#e5e7eb;
+  --muted:#9ca3af;
+  --primary:#3b82f6;
+  --danger:#ef4444;
+  --warning:#f59e0b;
+  --success:#22c55e;
+  --border:#374151;
+  --shadow: 0 10px 30px rgba(0,0,0,.20);
+}
+
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial;
+  background:radial-gradient(1200px 600px at 20% 0%, rgba(59,130,246,.10), transparent 60%),
+             radial-gradient(1000px 600px at 90% 10%, rgba(34,197,94,.06), transparent 55%),
+             var(--bg);
+  color:var(--text);
+}
+
+.container{
+  max-width:1200px;
+  margin:34px auto;
+  padding:0 20px;
+}
+
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:16px;
+  margin-bottom:20px;
+}
+
+h1{
+  margin:0;
+  font-size:26px;
+  font-weight:800;
+  letter-spacing:.2px;
+}
+
+.sub{
+  color:var(--muted);
+  font-size:14px;
+  margin-top:6px;
+  line-height:1.3;
+}
+
+.top-actions{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.topbar a{
+  color:var(--primary);
+  text-decoration:none;
+  font-size:14px;
+  font-weight:700;
+}
+
+.card{
+  background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.03));
+  border-radius:14px;
+  padding:20px;
+  margin-bottom:18px;
+  border:1px solid rgba(55,65,81,.75);
+  box-shadow: var(--shadow);
+}
+
+.card-title{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-bottom:10px;
+}
+
+h2{
+  margin:0;
+  font-size:16px;
+  font-weight:800;
+  letter-spacing:.2px;
+}
+
+.kpis{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+  margin-top:14px;
+}
+
+.kpi{
+  background:rgba(45,53,71,.75);
+  border:1px solid rgba(55,65,81,.75);
+  border-radius:12px;
+  padding:16px;
+}
+
+.kpi-number{
+  font-size:26px;
+  font-weight:900;
+}
+
+.kpi-label{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:6px;
+}
+
+.grid-2{
+  display:grid;
+  grid-template-columns: 1.2fr .8fr;
+  gap:14px;
+}
+
+@media(max-width:980px){
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .grid-2{grid-template-columns:1fr}
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
+}
+
+th,td{
+  padding:12px 10px;
+  border-bottom:1px solid rgba(55,65,81,.75);
+  text-align:left;
+  font-size:14px;
+}
+
+th{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:0.10em;
+  color:var(--muted);
+}
+
+.badge{
+  padding:5px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.danger{background:rgba(239,68,68,0.16);color:#fecaca;}
+.warn{background:rgba(245,158,11,0.16);color:#fde68a;}
+.ok{background:rgba(34,197,94,0.16);color:#bbf7d0;}
+
+.btn{
+  background:var(--primary);
+  color:white;
+  padding:8px 12px;
+  border-radius:10px;
+  font-size:13px;
+  text-decoration:none;
+  border:none;
+  cursor:pointer;
+  font-weight:800;
+}
+.btn:hover{filter:brightness(1.07)}
+
+.btn-danger{background:var(--danger);}
+.btn-secondary{background:#4b5563;}
+
+input{
+  background:rgba(45,53,71,.85);
+  border:1px solid rgba(55,65,81,.75);
+  color:white;
+  padding:10px 12px;
+  border-radius:10px;
+  width:100%;
+  outline:none;
+}
+
+hr.sep{
+  border:none;
+  border-top:1px solid rgba(55,65,81,.75);
+  margin:14px 0;
+}
+
+/* filtros */
+.filters{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+.filter-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  border-radius:999px;
+  border:1px solid rgba(55,65,81,.85);
+  background:rgba(45,53,71,.6);
+  color:var(--text);
+  font-size:13px;
+  font-weight:800;
+  text-decoration:none;
+}
+.filter-chip:hover{filter:brightness(1.06)}
+.filter-chip.active{
+  border-color: rgba(59,130,246,.55);
+  background: rgba(59,130,246,.15);
+}
+.small{
+  font-size:12px;
+  color:var(--muted);
+}
+</style>
 </head>
 <body>
 
+<div class="container">
+
+  <!-- HEADER -->
   <div class="topbar">
     <div>
-      <div class="muted">Hola, <b>{{ user }}</b></div>
-      <div class="muted">Rol: <b>{{ rol }}</b></div>
+      <h1>{{ user }} — {{ rol|capitalize }}</h1>
+      <div class="sub">Gestión contractual empresarial · Control, vencimientos y trazabilidad</div>
+
+      {% if flash_msg %}
+        <div class="sub" style="margin-top:10px;color:#bbf7d0;">
+          ✅ {{ flash_msg }}
+        </div>
+      {% endif %}
+      {% if mensaje %}
+        <div class="sub" style="margin-top:10px;color:#fde68a;">
+          {{ mensaje }}
+        </div>
+      {% endif %}
     </div>
-    <div class="row">
+
+    <div class="top-actions">
+      <a class="btn btn-secondary" href="/exportar_excel">Exportar CSV</a>
+
+      {% if rol == "admin" %}
+        <a href="/admin/papelera">🗑️ Papelera</a>
+      {% endif %}
+
       <a href="/config">Configuración</a>
-      <span class="muted">—</span>
-      <a href="/logout">Salir</a>
+      <a href="/logout">Cerrar sesión</a>
+    </div>
+
+  </div>
+
+  <!-- KPIs -->
+  <div class="card">
+    <div class="card-title">
+      <h2>Indicadores clave</h2>
+      <div class="small">Actualizado: {{ hoy }}</div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi">
+        <div class="kpi-number">{{ stats.total }}</div>
+        <div class="kpi-label">Total contratos</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-number">{{ stats.proximos }}</div>
+        <div class="kpi-label">Vencen ≤ 30 días</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-number">{{ stats.vencidos }}</div>
+        <div class="kpi-label">Vencidos</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-number">{{ stats.sin_fecha }}</div>
+        <div class="kpi-label">Sin fecha</div>
+      </div>
     </div>
   </div>
 
-  <div class="grid">
+  <!-- 2 columnas: Riesgo + Gráfico -->
+  <div class="grid-2">
 
+    <!-- Riesgo inmediato -->
     <div class="card">
-      <h1 class="title">Contratos próximos a vencer</h1>
-      <p class="subtitle">Aquí verás los contratos con fecha fin detectada dentro de 30 días.</p>
+      <div class="card-title">
+        <h2>Riesgo inmediato (≤ 7 días)</h2>
+        <span class="badge warn">Prioridad</span>
+      </div>
 
-      {% if mensaje %}
-        <div class="msg">{{ mensaje }}</div>
-      {% endif %}
-    </div>
-
-    <div class="card">
-      <h2 style="margin:0 0 10px;">Subir nuevo contrato</h2>
-
-      <form action="/subir_pdf/" method="post" enctype="multipart/form-data" class="row">
-        <input type="file" name="file" accept="application/pdf" required />
-        <button class="btn" type="submit">Subir PDF</button>
-        <a class="btn btn-secondary" href="/enviar_alertas/?dias=30" style="display:inline-block; padding:10px 14px; border-radius:10px;">
-          Enviar alertas (30 días)
-        </a>
-      </form>
-
-      <p class="muted" style="margin:10px 0 0;">
-        Consejo: si el PDF es escaneado, puede que no detecte texto (en Render suele estar OCR limitado).
-      </p>
-    </div>
-
-    <div class="card">
-      <h2>Preguntar a mis contratos</h2>
-
-      <form action="/preguntar_contratos/" method="post">
-        <input type="text"
-               name="pregunta"
-               placeholder="¿Qué contratos vencen pronto?"
-               style="width:60%; padding:8px;">
-        <button class="btn" type="submit">Preguntar</button>
-      </form>
-    </div>
-    <!-- ✅ NUEVO BLOQUE: Últimos contratos -->
-    <div class="card">
-      <h2 style="margin:0 0 10px;">Últimos contratos subidos</h2>
-
-      {% if ultimos and ultimos|length > 0 %}
-        <ul style="margin:0; padding-left:18px;">
-          {% for c in ultimos %}
-            <li style="margin:6px 0;">
-              <b>{{ c.get("archivo_pdf","") }}</b>
-              — tipo: {{ c.get("tipo","otro") }}
-              {% if c.get("fecha_fin") %} — fin: {{ c.get("fecha_fin") }}{% endif %}
-              {% if c.get("owner") %} — subido por: {{ c.get("owner") }}{% endif %}
-              {% if c.get("storage_path") %}
-                — <a href="/descargar/?path={{ c.get('storage_path') }}">Descargar</a>
-              {% endif %}
-            </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p class="muted" style="margin:0;">Aún no hay contratos subidos en esta empresa.</p>
-      {% endif %}
-    </div>
-
-    <div class="card">
-      <h2 style="margin:0 0 10px;">Listado</h2>
-
-      {% if contratos and contratos|length > 0 %}
+      {% if vencen_7 and vencen_7|length > 0 %}
         <table>
           <thead>
             <tr>
-              <th>Archivo</th>
-              <th>Tipo</th>
-              <th>Vence el</th>
-              <th>Días restantes</th>
-              <th>Estado</th>
-              <th>PDF</th>
+              <th>Documento</th><th>Tipo</th><th>Vence</th><th>Días</th><th>Responsable</th>
             </tr>
           </thead>
           <tbody>
-            {% for c in contratos %}
-              {% set dias = c.get("dias_restantes", 999999) %}
+            {% for c in vencen_7 %}
               <tr>
-                <td><b>{{ c.get("archivo_pdf","") }}</b></td>
-                <td>{{ c.get("tipo","otro") }}</td>
-                <td>{{ c.get("vence_el","") }}</td>
-                <td>{{ dias }}</td>
-                <td>
-                  {% if dias <= 7 %}
-                    <span class="pill pill-danger">Urgente</span>
-                  {% elif dias <= 30 %}
-                    <span class="pill pill-warn">Próximo</span>
-                  {% else %}
-                    <span class="pill pill-ok">OK</span>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if c.get("storage_path") %}
-                    <a href="/descargar/?path={{ c.get('storage_path') }}">Descargar</a>
-                  {% else %}
-                    <span class="muted">—</span>
-                  {% endif %}
-                    </td>
+                <td><b>{{ c.archivo_pdf }}</b></td>
+                <td>{{ c.tipo }}</td>
+                <td>{{ c.fecha_fin }}</td>
+                <td>{{ c.dias }}</td>
+                <td>{{ c.owner }}</td>
               </tr>
             {% endfor %}
           </tbody>
         </table>
       {% else %}
-        <p class="muted" style="margin:0;">
-          Aún no hay contratos próximos a vencer. Sube un PDF arriba para empezar.
-        </p>
+        <div class="sub">Sin vencimientos críticos.</div>
+      {% endif %}
+
+      <hr class="sep">
+
+      <div class="card-title" style="margin-bottom:0;">
+        <h2>Vencen ≤ 30 días</h2>
+        <span class="badge ok">Seguimiento</span>
+      </div>
+
+      {% if vencen_30 and vencen_30|length > 0 %}
+        <table>
+          <thead>
+            <tr>
+              <th>Documento</th><th>Vence</th><th>Días</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in vencen_30[:8] %}
+              <tr>
+                <td><b>{{ c.archivo_pdf }}</b><div class="small">{{ c.tipo }} · {{ c.owner }}</div></td>
+                <td>{{ c.fecha_fin }}</td>
+                <td>{{ c.dias }}</td>
+                <td><a class="btn btn-secondary" href="/descargar/?path={{ c.storage_path }}">Ver</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class="small" style="margin-top:8px;">Mostrando 8 primeros. La tabla completa está en “Gestión documental”.</div>
+      {% else %}
+        <div class="sub">No hay contratos que venzan en los próximos 30 días.</div>
       {% endif %}
     </div>
 
+    <!-- Gráfico -->
+    <div class="card">
+      <div class="card-title">
+        <h2>Vencimientos por mes</h2>
+        <span class="small">Distribución de fin de contrato</span>
+      </div>
+      <canvas id="vencimientosChart" height="160"></canvas>
+
+      <div class="small" style="margin-top:10px;">
+        Útil para ver acumulaciones de renovaciones en ciertos meses.
+      </div>
+    </div>
   </div>
+
+  <!-- Buscador / Preguntas -->
+  <div class="card">
+    <div class="card-title">
+      <h2>Buscar contratos</h2>
+      <span class="small">Consulta rápida</span>
+    </div>
+    <div class="sub">Ejemplos: “vencen en 15 días”, “laborales”, “sin fecha”.</div>
+    <form action="/preguntar_contratos/" method="post" style="margin-top:12px; display:flex; gap:10px; align-items:center;">
+      <input name="pregunta" placeholder="¿Qué contratos vencen pronto?">
+      <button class="btn" type="submit">Preguntar</button>
+    </form>
+  </div>
+
+  <!-- Gestión documental + Filtros -->
+  <div class="card">
+    <div class="card-title">
+      <h2>Gestión documental</h2>
+      <span class="small">Tabla completa</span>
+    </div>
+
+    <!-- Filtros por tipo -->
+    <div class="filters">
+      <a class="filter-chip {% if not tipo_actual %}active{% endif %}" href="/">Todos</a>
+      <a class="filter-chip {% if tipo_actual=='laboral' %}active{% endif %}" href="/?tipo=laboral">Laboral</a>
+      <a class="filter-chip {% if tipo_actual=='alquiler' %}active{% endif %}" href="/?tipo=alquiler">Alquiler</a>
+      <a class="filter-chip {% if tipo_actual=='servicios' %}active{% endif %}" href="/?tipo=servicios">Servicios</a>
+      <a class="filter-chip {% if tipo_actual=='seguro' %}active{% endif %}" href="/?tipo=seguro">Seguro</a>
+      <a class="filter-chip {% if tipo_actual=='otro' %}active{% endif %}" href="/?tipo=otro">Otro</a>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Documento</th>
+          <th>Tipo</th>
+          <th>Vence</th>
+          <th>Responsable</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in todos %}
+        <tr>
+          <td><b>{{ c.archivo_pdf }}</b></td>
+          <td>{{ c.tipo }}</td>
+          <td>{{ c.fecha_fin or "—" }}</td>
+          <td>{{ c.owner }}</td>
+          <td>
+            {% if c.fecha_fin %}
+              {% if c.fecha_fin < hoy %}
+                <span class="badge danger">Vencido</span>
+              {% else %}
+                <span class="badge ok">Activo</span>
+              {% endif %}
+            {% else %}
+              <span class="badge warn">Sin fecha</span>
+            {% endif %}
+          </td>
+          <td>
+            <a class="btn" href="/descargar/?path={{ c.storage_path }}">Descargar</a>
+            {% if rol == "admin" %}
+            <form method="post" action="/admin/borrar_contrato" style="display:inline;">
+              <input type="hidden" name="contrato_id" value="{{ c.id }}">
+              <button class="btn btn-danger" type="submit" onclick="return confirm('¿Eliminar? Se moverá a papelera si la tienes activa.')">Eliminar</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if todos|length == 0 %}
+      <div class="sub" style="margin-top:10px;">No hay contratos para este filtro.</div>
+    {% endif %}
+  </div>
+
+  <!-- Equipo (admin) -->
+  {% if rol == "admin" %}
+  <div class="card">
+    <div class="card-title">
+      <h2>Equipo</h2>
+      <span class="small">Usuarios de tu empresa</span>
+    </div>
+
+    {% if miembros and miembros|length > 0 %}
+    <table>
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Rol</th>
+          <th>Email alertas</th>
+          <th>Creado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in miembros %}
+        <tr>
+          <td><b>{{ m.username }}</b></td>
+          <td>{{ m.rol }}</td>
+          <td>{{ m.email_alertas or "—" }}</td>
+          <td>{{ (m.creado_en|string)[:10] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <div class="sub">No hay miembros registrados.</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+const ctx = document.getElementById('vencimientosChart');
+if(ctx){
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: {{ grafico_labels|tojson }},
+      datasets: [{
+        label: 'Contratos',
+        data: {{ grafico_values|tojson }},
+        backgroundColor: 'rgba(59,130,246,0.65)',
+        borderColor: 'rgba(59,130,246,1)',
+        borderWidth: 1,
+        borderRadius: 8
+      }]
+    },
+    options: {
+      plugins: { legend: { display:false } },
+      scales: {
+        y: { beginAtZero:true, ticks: { precision: 0 }, grid: { color: 'rgba(255,255,255,.06)' } },
+        x: { grid: { color: 'rgba(255,255,255,.06)' } }
+      }
+    }
+  });
+}
+</script>
 
 </body>
 </html>

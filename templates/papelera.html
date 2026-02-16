@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Papelera</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:24px;background:#0b1220;color:#e5e7eb;}
+    a{color:#60a5fa;text-decoration:none} a:hover{text-decoration:underline}
+    .card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:12px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
+    th{color:#9ca3af;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+    .btn{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.06);color:#e5e7eb;padding:8px 12px;border-radius:12px;cursor:pointer;font-weight:700}
+    .danger{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.35);color:#fecaca}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+      <div>
+        <h1 style="margin:0;">Papelera</h1>
+        <div style="color:#9ca3af;">Restaurar contratos borrados por error o eliminar definitivamente.</div>
+      </div>
+      <a href="/">← Volver al dashboard</a>
+    </div>
+
+    {% if papelera and papelera|length > 0 %}
+      <table>
+        <thead>
+          <tr>
+            <th>Archivo</th>
+            <th>Tipo</th>
+            <th>Fin</th>
+            <th>Owner</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in papelera %}
+          <tr>
+            <td><b>{{ c.get("archivo_pdf","") }}</b></td>
+            <td>{{ c.get("tipo","otro") }}</td>
+            <td>{{ (c.get("fecha_fin") or "")[:10] or "—" }}</td>
+            <td>{{ c.get("owner") or "—" }}</td>
+            <td>
+              <form method="post" action="/admin/restaurar_contrato" style="display:inline">
+                <input type="hidden" name="contrato_id" value="{{ c.get('id') }}">
+                <button class="btn" type="submit">Restaurar</button>
+              </form>
+
+              <form method="post" action="/admin/borrar_definitivo" style="display:inline">
+                <input type="hidden" name="contrato_id" value="{{ c.get('id') }}">
+                <button class="btn danger" type="submit"
+                  onclick="return confirm('¿Borrar definitivamente? Esto elimina también el archivo del storage.')">
+                  Borrar definitivo
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p style="color:#9ca3af;margin:12px 0 0;">La papelera está vacía.</p>
+    {% endif %}
+  </div>
+</body>
+</html>

@@ -1,40 +1,84 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="es">
 <head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Configuración</title>
+  <style>
+    :root{--bg:#0b1220;--card:rgba(255,255,255,.04);--line:rgba(255,255,255,.10);--muted:#9ca3af;--text:#e5e7eb;--brand:#60a5fa;}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;}
+    a{color:var(--brand);text-decoration:none} a:hover{text-decoration:underline}
+    .wrap{max-width:900px;margin:24px auto;padding:0 16px}
+    .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 18px 50px rgba(0,0,0,.25)}
+    h1{margin:0;font-size:24px;font-weight:900}
+    .sub{margin:6px 0 0;color:var(--muted);font-size:14px}
+    label{display:block;font-size:12px;color:var(--muted);margin:12px 0 6px}
+    input{width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);outline:none}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .btn{padding:11px 12px;border-radius:12px;border:1px solid transparent;cursor:pointer;font-weight:800;
+         background:linear-gradient(180deg, rgba(96,165,250,.95), rgba(37,99,235,.95));color:white}
+    .btn:hover{filter:brightness(1.05)}
+    .msg{margin-top:12px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.04)}
+    .ok{border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.10);color:#bbf7d0}
+    .err{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.10);color:#fecaca}
+    .pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);font-weight:800}
+    @media (max-width:800px){.row{grid-template-columns:1fr}}
+  </style>
 </head>
 <body>
-  <p><a href="/">Volver</a> | <a href="/logout">Salir</a></p>
-  <h1>Configuración</h1>
+<div class="wrap">
+  <div class="top">
+    <a href="/">← Volver al panel</a>
+    <a href="/logout">Salir</a>
+  </div>
 
-  {% if ok %}
-    <p style="color:green;">Guardado ✅</p>
-  {% endif %}
+  <div class="card">
+    <h1>Configuración</h1>
+        {% if request.query_params.get("force") %}
+          <div class="msg err">
+            ⚠️ Debes completar la configuración antes de usar el sistema.
+          </div>
+        {% endif %}
 
-  {% if error %}
-    <p style="color:red;">{{ error }}</div>
-  {% endif %}
+    <p class="sub">Gestiona tu empresa, código de invitación y email de alertas.</p>
 
-  <form action="/config" method="post">
+    <div style="margin-top:10px;">
+      <span class="pill">Rol: {{ rol }}</span>
+    </div>
 
-    {% if rol == "admin" %}
-      <label>Nombre de la empresa</label><br>
-      <input name="empresa" value="{{ empresa or '' }}" style="width:320px;"><br><br>
+    <form action="/config" method="post" style="margin-top:10px;">
+      <div class="row">
+        <div>
+          <label>Email para recibir alertas</label>
+          <input name="email" value="{{ email }}" placeholder="tuemail@correo.com" />
+        </div>
 
-      <label>Código para invitar usuarios</label><br>
-      <input value="{{ codigo or '' }}" style="width:320px;" readonly><br>
-      <small>Copia este código y pásaselo a tu equipo para unirse a tu empresa.</small><br><br>
-    {% else %}
-      <p>Empresa: <b>{{ empresa }}</b></p>
-      <p style="color:#555;">Solo un admin puede cambiar la empresa y ver el código.</p>
-      <!-- Importante: no mandamos 'empresa' desde miembros -->
+        <div>
+          <label>Código para invitar usuarios</label>
+          <input value="{{ codigo }}" readonly />
+          <div style="color:var(--muted);font-size:12px;margin-top:6px;">
+            Cópialo y pásalo a tu equipo.
+          </div>
+        </div>
+      </div>
+
+      <label style="margin-top:14px;">Nombre de la empresa {% if rol != 'admin' %}(solo admin){% endif %}</label>
+      <input name="empresa" value="{{ empresa }}" {% if rol != 'admin' %}readonly{% endif %} placeholder="MiEmpresa" />
+
+      <div style="margin-top:14px;">
+        <button class="btn" type="submit">Guardar</button>
+      </div>
+    </form>
+
+    {% if ok %}
+      <div class="msg ok">Guardado ✅</div>
     {% endif %}
-
-    <label>Email para recibir alertas</label><br>
-    <input name="email" value="{{ email or '' }}" style="width:320px;"><br><br>
-
-    <button type="submit">Guardar</button>
-
-</form>
+    {% if error %}
+      <div class="msg err">❌ {{ error }}</div>
+    {% endif %}
+  </div>
+</div>
 </body>
 </html>

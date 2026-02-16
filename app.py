@@ -15,9 +15,14 @@ from dateutil import parser
 from passlib.context import CryptContext
 import yagmail
 
+from fastapi.responses import StreamingResponse
+import csv
+from io import StringIO
+
 import secrets
 import string
 
+from supabase import Client
 from io import BytesIO
 from supabase import create_client
 from dotenv import load_dotenv
@@ -34,21 +39,36 @@ logger = logging.getLogger("contractai")
 app = FastAPI()
 SESSION_SECRET = os.environ.get("SESSION_SECRET", "dev-secret")
 
+# Detectar entorno
+ENV = (os.environ.get("ENV") or "local").lower()
+IS_PROD = ENV in ("prod", "production")
+
 app.add_middleware(
     SessionMiddleware,
     secret_key=SESSION_SECRET,
-    https_only=True,       # solo cookies por HTTPS
-    same_site="lax"        # protección CSRF básica
+    https_only=IS_PROD,   # 🔐 True solo en producción
+    same_site="lax"
 )
 
 SUPABASE_URL = (os.environ.get("SUPABASE_URL") or "").strip()
 SUPABASE_SERVICE_ROLE_KEY = (os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
+SUPABASE_ANON_KEY = (os.environ.get("SUPABASE_ANON_KEY") or "").strip()
 
-supabase = None
+
+supabase_service = None
+supabase_anon = None
+
 if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
-    supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    supabase_service = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+if SUPABASE_URL and SUPABASE_ANON_KEY:
+    supabase_anon = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 else:
-    print("⚠️ SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY no están configuradas en el entorno.")
+    print("⚠️ SUPABASE_URL o SUPABASE_ANON_KEY no están configuradas en el entorno.")
+
+# ✅ alias DESPUÉS de crear el cliente
+supabase = supabase_service
+
 
 if SUPABASE_URL and not SUPABASE_URL.startswith("https://"):
     print("⚠️ SUPABASE_URL no empieza por https://")
@@ -83,6 +103,60 @@ def insertar_usuario_db(username: str, password_hash: str, rol: str = "admin"):
         "empresa_codigo": "",
         "email_alertas": ""
     }).execute()
+
+
+def username_a_email(username: str) -> str:
+    u = (username or "").strip().lower()
+    # dominio interno (no real) solo para Supabase Auth
+    return f"{u}@users.tuapp.local"
+
+
+def supabase_user_client(request: Request):
+    """
+    Devuelve un cliente anon con el access_token del usuario.
+    Si el token caducó, intenta refrescar con refresh_token guardado en sesión.
+    """
+    token = request.session.get("sb_access_token")
+    if not token:
+        return None
+
+    client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    try:
+        client.postgrest.auth(token)
+        return client
+    except Exception as e:
+        # Si falla por JWT expirado, intentamos refresh
+        if "JWT expired" in str(e) or "PGRST303" in str(e):
+            refresh_token = request.session.get("sb_refresh_token")
+            if not refresh_token or supabase_anon is None:
+                return None
+
+            try:
+                # refrescar sesión
+                refreshed = supabase_anon.auth.refresh_session(refresh_token)
+
+                session_obj = getattr(refreshed, "session", None) or (
+                    refreshed.get("session") if isinstance(refreshed, dict) else None
+                )
+                new_access = getattr(session_obj, "access_token", None) if session_obj else None
+                new_refresh = getattr(session_obj, "refresh_token", None) if session_obj else None
+
+                if not new_access:
+                    return None
+
+                request.session["sb_access_token"] = new_access
+                if new_refresh:
+                    request.session["sb_refresh_token"] = new_refresh
+
+                # reintentar auth
+                client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+                client.postgrest.auth(new_access)
+                return client
+            except:
+                return None
+
+        return None
 
 
 def normalizar_password(p: str) -> str:
@@ -127,6 +201,7 @@ def validar_usuario(username: str, password: str):
 
     password = normalizar_password(password)
     return pwd_context.verify(password, u.get("password_hash", ""))
+
 
 
 # -----------------------------
@@ -199,13 +274,33 @@ def generar_codigo_empresa():
     return "".join(secrets.choice(alfabeto) for _ in range(6))
 
 
+def obtener_empresa_db(empresa_id: str):
+    if supabase is None or not empresa_id:
+        return None
+    res = supabase.table("empresas").select("*").eq("id", empresa_id).limit(1).execute()
+    return (res.data or [None])[0]
+
+
+def get_empresa_id(username: str):
+    u = obtener_usuario_db(username) or {}
+    eid = u.get("empresa_id")
+    if not eid:
+        return None
+    return str(eid)
+
+
+def set_empresa_id(username: str, empresa_id: str):
+    if supabase is None:
+        return
+    supabase.table("usuarios_app").update({"empresa_id": empresa_id}).eq("username", username).execute()
+
+
 def buscar_empresa_por_codigo(codigo: str):
     if supabase is None:
         return None
     codigo = (codigo or "").strip().upper()
-    res = supabase.table("usuarios_app").select("empresa").eq("empresa_codigo", codigo).limit(1).execute()
-    row = (res.data or [None])[0]
-    return (row or {}).get("empresa")
+    res = supabase.table("empresas").select("*").eq("codigo", codigo).limit(1).execute()
+    return (res.data or [None])[0]
 
 # -----------------------------
 # Helpers: registro contratos
@@ -304,54 +399,42 @@ def clasificar_contrato(texto: str):
     return "otro"
 
 
-def obtener_contratos_supabase(empresa: str, owner: str | None = None, limit: int = 200):
-    """
-    Devuelve contratos desde Supabase (tabla contratos) para una empresa.
-    Si owner se pasa, filtra por usuario.
-    """
-    if supabase is None:
+def obtener_contratos_supabase(sb, empresa_id: str, limit: int = 200):
+    if sb is None:
         return []
-
-    q = (
-        supabase
-        .table("contratos")
+    res = (
+        sb.table("contratos")
         .select("archivo_pdf,fecha_fin,tipo,owner,creado_en,storage_path")
-        .eq("empresa", empresa)
+        .eq("empresa_id", empresa_id)
         .order("creado_en", desc=True)
         .limit(limit)
+        .execute()
     )
-
-    if owner:
-        q = q.eq("owner", owner)
-
-    res = q.execute()
     return res.data or []
 
 
-def obtener_alertas_supabase(empresa: str, dias: int = 30, owner: str | None = None, limit: int = 500):
+def obtener_alertas_supabase(sb, empresa_id: str, dias: int = 30, limit: int = 500):
     """
-    Devuelve contratos con fecha_fin <= hoy + dias desde Supabase.
+    Alertas (<= hoy + dias) usando RLS (sb).
     """
-    if supabase is None:
+    if sb is None or not empresa_id:
         return []
 
     hoy = datetime.now().date()
     limite = hoy + timedelta(days=dias)
 
-    # Traemos contratos con fecha_fin no nula (filtraremos en Python por seguridad)
-    q = (
-        supabase
-        .table("contratos")
-        .select("archivo_pdf,fecha_fin,tipo,owner,creado_en,storage_path")
-        .eq("empresa", empresa)
-        .order("fecha_fin", desc=False)
-        .limit(limit)
-    )
+    try:
+        res = (
+            sb.table("contratos")
+            .select("archivo_pdf,fecha_fin,tipo,owner,creado_en,storage_path,empresa_id")
+            .eq("empresa_id", empresa_id)
+            .order("fecha_fin", desc=False)
+            .limit(limit)
+            .execute()
+        )
+    except Exception:
+        return []
 
-    if owner:
-        q = q.eq("owner", owner)
-
-    res = q.execute()
     items = res.data or []
 
     alertas = []
@@ -359,9 +442,10 @@ def obtener_alertas_supabase(empresa: str, dias: int = 30, owner: str | None = N
         fecha = it.get("fecha_fin")
         if not fecha:
             continue
+
         try:
             fin = datetime.fromisoformat(str(fecha)).date()
-        except:
+        except Exception:
             continue
 
         if fin <= limite:
@@ -369,7 +453,7 @@ def obtener_alertas_supabase(empresa: str, dias: int = 30, owner: str | None = N
                 "owner": it.get("owner"),
                 "archivo_pdf": it.get("archivo_pdf"),
                 "tipo": it.get("tipo", "otro"),
-                "vence_el": str(fecha),
+                "vence_el": str(fecha)[:10],
                 "dias_restantes": (fin - hoy).days,
                 "storage_path": it.get("storage_path", "")
             })
@@ -377,6 +461,42 @@ def obtener_alertas_supabase(empresa: str, dias: int = 30, owner: str | None = N
     alertas.sort(key=lambda x: x["vence_el"])
     return alertas
 
+
+@app.get("/exportar_excel")
+def exportar_excel(request: Request):
+    user = usuario_actual(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
+
+    sb = supabase_user_client(request)
+    empresa_id = get_empresa_id(user)
+
+    res = (
+        sb.table("contratos")
+        .select("archivo_pdf,tipo,fecha_fin,owner")
+        .eq("empresa_id", empresa_id)
+        .execute()
+    )
+
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Archivo","Tipo","Fecha fin","Responsable"])
+
+    for row in res.data or []:
+        writer.writerow([
+            row.get("archivo_pdf"),
+            row.get("tipo"),
+            row.get("fecha_fin"),
+            row.get("owner")
+        ])
+
+    output.seek(0)
+
+    return StreamingResponse(
+        output,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=contratos.csv"}
+    )
 
 # -----------------------------
 # Auth pages
@@ -388,10 +508,65 @@ def login_get(request: Request):
 
 @app.post("/login")
 def login_post(request: Request, username: str = Form(...), password: str = Form(...)):
-    if validar_usuario(username, password):
+    username = (username or "").strip()
+    if not username:
+        return templates.TemplateResponse("login.html", {"request": request, "error": "Username requerido"})
+
+    if supabase_anon is None:
+        return templates.TemplateResponse("login.html", {"request": request, "error": "Supabase no disponible"})
+
+    email_interno = username_a_email(username)
+    password = normalizar_password(password)
+
+    try:
+        login_res = supabase_anon.auth.sign_in_with_password({"email": email_interno, "password": password})
+        session_obj = getattr(login_res, "session", None) or (login_res.get("session") if isinstance(login_res, dict) else None)
+        access_token = getattr(session_obj, "access_token", None) if session_obj else None
+        refresh_token = getattr(session_obj, "refresh_token", None) if session_obj else None
+
+
+        if not access_token:
+            return templates.TemplateResponse("login.html", {"request": request, "error": "No se pudo iniciar sesión (token vacío)"})
+
+        # sesión de tu app
         request.session["user"] = username
+        # token Supabase para RLS
+        request.session["sb_access_token"] = access_token
+        if refresh_token:
+            request.session["sb_refresh_token"] = refresh_token
+
+
         return RedirectResponse(url="/", status_code=303)
-    return templates.TemplateResponse("login.html", {"request": request, "error": "Usuario o contraseña incorrectos"})
+
+    except Exception:
+        return templates.TemplateResponse("login.html", {"request": request, "error": "Usuario o contraseña incorrectos"})
+
+
+
+import jwt  # <- arriba del todo, con tus imports
+
+@app.get("/debug_me")
+def debug_me(request: Request):
+    token = request.session.get("sb_access_token")
+    if not token:
+        return {"ok": False, "error": "No token en sesión"}
+
+    # OJO: esto es SOLO para debug (no verifica firma)
+    decoded = jwt.decode(token, options={"verify_signature": False})
+
+    return {
+        "ok": True,
+        "auth_user_id": decoded.get("sub"),
+        "email": decoded.get("email"),
+        "role": decoded.get("role"),
+    }
+
+@app.get("/landing")
+async def landing(request: Request):
+    return templates.TemplateResponse("landing.html", {
+        "request": request
+    })
+
 
 
 # -----------------------------
@@ -409,27 +584,98 @@ def registro_post(
     password: str = Form(...),
     codigo_empresa: str = Form("")
 ):
-    ok = crear_usuario(username, password)
-    if not ok:
-        return templates.TemplateResponse(
-            "registro.html",
-            {"request": request, "error": "Ese usuario ya existe"}
-        )
+    username = (username or "").strip()
 
-    # iniciar sesión
+    password = normalizar_password(password)
+
+    # Validación contraseña mínima
+    if len(password) < 8:
+        return templates.TemplateResponse("registro.html", {
+           "request": request,
+           "error": "La contraseña debe tener al menos 8 caracteres"
+        })
+
+   # Validación básica username
+    if not re.match(r"^[a-zA-Z0-9_]{3,30}$", username):
+        return templates.TemplateResponse("registro.html", {
+            "request": request,
+            "error": "El usuario solo puede contener letras, números o '_' (3-30 caracteres)"
+    })
+
+    if not username:
+        return templates.TemplateResponse("registro.html", {"request": request, "error": "Username requerido"})
+
+    if supabase_anon is None or supabase_service is None:
+        return templates.TemplateResponse("registro.html", {"request": request, "error": "Supabase no disponible"})
+
+    email_interno = username_a_email(username)
+    password = normalizar_password(password)
+
+    # 1) Crear usuario en Supabase Auth (con email interno)
+    try:
+        auth_res = supabase_anon.auth.sign_up({"email": email_interno, "password": password})
+        user_obj = getattr(auth_res, "user", None) or (auth_res.get("user") if isinstance(auth_res, dict) else None)
+        if not user_obj:
+            return templates.TemplateResponse("registro.html", {"request": request, "error": "No se pudo crear el usuario (Auth)"})
+        auth_user_id = user_obj.id
+    except Exception as e:
+        return templates.TemplateResponse("registro.html", {"request": request, "error": f"Error creando usuario: {str(e)[:160]}"})
+
+    # 2) Crear fila en usuarios_app con auth_user_id
+    try:
+        # determinar rol/empresa según código
+        empresa_id = None
+        rol = "admin"
+        codigo = (codigo_empresa or "").strip().upper()
+
+        mensaje_registro = None
+
+        if codigo:
+            empresa_row = buscar_empresa_por_codigo(codigo)
+            if empresa_row:
+                empresa_id = empresa_row["id"]
+                rol = "miembro"
+                mensaje_registro = f"Te has unido a {empresa_row['nombre']} como miembro"
+            else:
+                return templates.TemplateResponse("registro.html", {
+                    "request": request,
+                    "error": "El código de empresa no existe"
+                })
+        else:
+            mensaje_registro = "Se ha creado tu empresa y eres administrador"
+
+        supabase_service.table("usuarios_app").insert({
+            "username": username,
+            "password_hash": pwd_context.hash(password),   # puedes mantenerlo o quitarlo luego
+            "auth_user_id": auth_user_id,
+            "rol": rol,
+            "empresa_id": empresa_id,
+            "email_alertas": ""
+        }).execute()
+    except Exception as e:
+        return templates.TemplateResponse("registro.html", {"request": request, "error": f"Error creando perfil: {str(e)[:160]}"})
+
+    # 3) Iniciar sesión en tu app (y además guardar token de Supabase)
+    try:
+        login_res = supabase_anon.auth.sign_in_with_password({"email": email_interno, "password": password})
+        session_obj = getattr(login_res, "session", None) or (login_res.get("session") if isinstance(login_res, dict) else None)
+
+        access_token = getattr(session_obj, "access_token", None) if session_obj else None
+        refresh_token = getattr(session_obj, "refresh_token", None) if session_obj else None
+
+        if access_token:
+            request.session["sb_access_token"] = access_token
+        if refresh_token:
+            request.session["sb_refresh_token"] = refresh_token
+
+    except:
+        # si falla el login automático, igual lo dejamos registrado
+        pass
+
+    if mensaje_registro:
+        request.session["flash_msg"] = mensaje_registro
+
     request.session["user"] = username
-
-    # unir a empresa si mete código
-    empresa_por_codigo = buscar_empresa_por_codigo(codigo_empresa)
-    if empresa_por_codigo:
-        set_empresa(username, empresa_por_codigo)
-        set_rol(username, "miembro")
-    else:
-        # si no se une con código, su empresa será la que ponga luego en config
-        # y será admin cuando cree/defina su empresa
-        set_rol(username, "admin")
-
-
     return RedirectResponse(url="/", status_code=303)
 
 
@@ -439,18 +685,25 @@ def logout(request: Request):
     return RedirectResponse(url="/login", status_code=303)
 
 
-
 # -----------------------------
 # Dashboard
 # -----------------------------
 @app.get("/")
-def dashboard(request: Request):
+def dashboard(request: Request, tipo: str = None):
+
     user = usuario_actual(request)
     if not user:
         return RedirectResponse(url="/login", status_code=303)
 
+    sb = supabase_user_client(request)
+    if sb is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    # --- Parámetros ---
     ok = request.query_params.get("ok")
     err = request.query_params.get("err")
+    hoy = datetime.now().date()
+    hoy_str = hoy.isoformat()
 
     if err:
         mensaje = f"❌ Error: {err}"
@@ -459,78 +712,169 @@ def dashboard(request: Request):
     else:
         mensaje = None
 
-    empresa = get_empresa(user) or "MiEmpresa"
-    rol = get_rol(user)
+    flash_msg = request.session.pop("flash_msg", None)
 
-    if supabase is None:
+    rol = get_rol(user)
+    empresa_id = get_empresa_id(user)
+    email_alertas = get_email_alertas(user)
+    empresa_row = obtener_empresa_db(empresa_id) if empresa_id else None
+
+    # 🔒 Forzar configuración si admin no completó datos
+    if rol == "admin":
+        if not empresa_id or not empresa_row or not empresa_row.get("nombre") or not email_alertas:
+            return RedirectResponse(url="/config?force=1", status_code=303)
+
+    # --- Query contratos (RLS) ---
+    try:
+        res = (
+            sb.table("contratos")
+            .select("id,archivo_pdf,fecha_fin,tipo,creado_en,owner,storage_path")
+            .eq("empresa_id", empresa_id)
+            .order("creado_en", desc=True)
+            .limit(200)
+            .execute()
+        )
+        items = res.data or []
+
+    except Exception as e:
+        if "JWT" in str(e):
+            request.session.clear()
+            return RedirectResponse(url="/login", status_code=303)
+
         return templates.TemplateResponse("dashboard.html", {
             "request": request,
-            "contratos": [],
-            "ultimos": [],
             "user": user,
             "rol": rol,
-            "mensaje": "⚠️ Supabase no configurado."
+            "mensaje": f"❌ Error consultando contratos: {str(e)[:140]}",
+            "flash_msg": flash_msg,
+            "hoy": hoy_str,
+            "stats": {"total": 0, "proximos": 0, "vencidos": 0, "sin_fecha": 0},
+            "todos": [],
+            "ultimos": [],
+            "vencen_30": [],
+            "vencen_7": [],
+            "vencidos_list": [],
+            "sin_fecha_list": [],
+            "miembros": [],
+            "grafico_labels": [],
+            "grafico_values": []
         })
 
-    q = (
-        supabase
-        .table("contratos")
-        .select("archivo_pdf,fecha_fin,tipo,creado_en,owner,storage_path")
-        .eq("empresa", empresa)
-        .order("creado_en", desc=True)
-        .limit(50)
-    )
-
-    # Si NO es admin, solo ve sus contratos
-    if rol != "admin":
-        q = q.eq("owner", user)
-
-    res = q.execute()
+    # --- Filtro por tipo ---
+    tipos_validos = ["laboral", "alquiler", "servicios", "seguro", "otro"]
+    if tipo and tipo in tipos_validos:
+        items = [i for i in items if (i.get("tipo") or "otro") == tipo]
+    else:
+        tipo = None
 
 
-    items = res.data or []
+    # --- Helpers ---
+    limite_30 = hoy + timedelta(days=30)
+    limite_7 = hoy + timedelta(days=7)
 
-    ultimos = []
-    for it in items[:10]:
-        ultimos.append({
-            "archivo_pdf": it.get("archivo_pdf"),
-            "tipo": it.get("tipo", "otro"),
-            "fecha_fin": str(it.get("fecha_fin") or ""),
-            "owner": it.get("owner", ""),
-            "storage_path": it.get("storage_path", "")
-        })
+    def to_date(x):
+        try:
+            return datetime.fromisoformat(str(x)[:10]).date()
+        except:
+            return None
 
-    hoy = datetime.now().date()
-    limite = hoy + timedelta(days=30)
+    # --- Listas ---
+    todos = []
+    vencen_30 = []
+    vencen_7 = []
+    vencidos_list = []
+    sin_fecha_list = []
 
-    contratos = []
     for it in items:
-        fecha_fin = it.get("fecha_fin")
-        if not fecha_fin:
+        fin = to_date(it.get("fecha_fin"))
+
+        row = {
+            "id": it.get("id"),
+            "archivo_pdf": it.get("archivo_pdf") or "",
+            "tipo": it.get("tipo") or "otro",
+            "fecha_fin": fin.isoformat() if fin else None,
+            "owner": it.get("owner") or "",
+            "storage_path": it.get("storage_path") or "",
+        }
+
+        todos.append(row)
+
+        if not fin:
+            sin_fecha_list.append(row)
+            continue
+
+        if fin < hoy:
+            vencidos_list.append(row)
+
+        if fin <= limite_30:
+            vencen_30.append({**row, "dias": (fin - hoy).days})
+
+        if fin <= limite_7:
+            vencen_7.append({**row, "dias": (fin - hoy).days})
+
+    # --- KPIs ---
+    stats = {
+        "total": len(todos),
+        "proximos": len(vencen_30),
+        "vencidos": len(vencidos_list),
+        "sin_fecha": len(sin_fecha_list),
+    }
+
+    ultimos = todos[:10]
+
+    # --- Datos gráfico ---
+    from collections import Counter
+    grafico_meses = []
+
+    for it in items:
+        fecha = it.get("fecha_fin")
+        if not fecha:
             continue
         try:
-            fin_date = datetime.fromisoformat(str(fecha_fin)).date()
-        except Exception:
+            fin = datetime.fromisoformat(str(fecha)).date()
+            grafico_meses.append(fin.strftime("%Y-%m"))
+        except:
             continue
 
-        if fin_date <= limite:
-            contratos.append({
-                "archivo_pdf": it.get("archivo_pdf"),
-                "tipo": it.get("tipo", "otro"),
-                "vence_el": str(fecha_fin),
-                "dias_restantes": (fin_date - hoy).days,
-                "storage_path": it.get("storage_path", "")
-            })
+    conteo = Counter(grafico_meses)
+    grafico_labels = sorted(conteo.keys())
+    grafico_values = [conteo[m] for m in grafico_labels]
 
-    contratos.sort(key=lambda x: x["vence_el"])
+    # --- Miembros (admin) ---
+    miembros = []
+    if rol == "admin" and supabase_service is not None:
+        try:
+            r = (
+                supabase_service.table("usuarios_app")
+                .select("username,rol,email_alertas,creado_en")
+                .eq("empresa_id", empresa_id)
+                .order("creado_en", desc=False)
+                .execute()
+            )
+            miembros = r.data or []
+        except:
+            miembros = []
 
+    # --- Return final ---
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
-        "contratos": contratos,
-        "ultimos": ultimos,
         "user": user,
         "rol": rol,
-        "mensaje": mensaje
+        "mensaje": mensaje,
+        "flash_msg": flash_msg,
+        "hoy": hoy_str,
+
+        "stats": stats,
+        "todos": todos,
+        "ultimos": ultimos,
+        "vencen_30": vencen_30,
+        "vencen_7": vencen_7,
+        "vencidos_list": vencidos_list,
+        "sin_fecha_list": sin_fecha_list,
+        "miembros": miembros,
+        "grafico_labels": grafico_labels,
+        "grafico_values": grafico_values,
+        "tipo_actual": tipo
     })
 
 
@@ -543,59 +887,62 @@ async def subir_pdf(request: Request, file: UploadFile = File(...)):
     if not user:
         return RedirectResponse(url="/login", status_code=303)
 
-    if supabase is None:
-        return RedirectResponse(url="/?ok=0&err=" + quote("Supabase no configurado"), status_code=303)
+    sb = supabase_user_client(request)
+    if sb is None:
+        return RedirectResponse(url="/login", status_code=303)
 
     try:
-        logger.info("Subida PDF iniciada user=%s file=%s", user, file.filename)
+        logger.info("Subida PDF iniciada user=%s file=%s", user, getattr(file, "filename", ""))
 
         # Validación: solo PDF
         ct = (file.content_type or "").lower()
-        if "pdf" not in ct and not (file.filename or "").lower().endswith(".pdf"):
+        fname = (file.filename or "").strip()
+        if "pdf" not in ct and not fname.lower().endswith(".pdf"):
             return RedirectResponse(url="/?ok=0&err=" + quote("Solo se permiten archivos PDF"), status_code=303)
 
-        u = obtener_usuario_db(user) or {}
-        empresa = normalizar_empresa(u.get("empresa")) or "MiEmpresa"
+        # Empresa
+        empresa_id = get_empresa_id(user)
+        if not empresa_id:
+            return RedirectResponse(url="/?ok=0&err=" + quote("No tienes empresa asignada"), status_code=303)
 
+        erow = obtener_empresa_db(empresa_id) or {}
+        empresa_nombre = erow.get("nombre", "MiEmpresa")
 
-        # Evitar duplicado por nombre para este usuario
-        res_dup = (
-            supabase
-            .table("contratos")
-            .select("archivo_pdf")
-            .eq("empresa", empresa)
-            .eq("owner", user)
-            .eq("archivo_pdf", file.filename)
-            .limit(1)
-            .execute()
-        )
-
-        if res_dup.data:
-            return RedirectResponse(
-                url="/?ok=0&err=" + quote("Ya existe un contrato con ese nombre"),
-                status_code=303
+        # Evitar duplicado (CON RLS)
+        try:
+            res_dup = (
+                sb.table("contratos")
+                .select("archivo_pdf")
+                .eq("empresa_id", empresa_id)
+                .eq("archivo_pdf", fname)
+                .limit(1)
+                .execute()
             )
+            if res_dup.data:
+                return RedirectResponse(
+                    url="/?ok=0&err=" + quote("Ya existe un contrato con ese nombre"),
+                    status_code=303
+                )
+        except Exception as e:
+            return RedirectResponse(url="/?ok=0&err=" + quote(f"Error comprobando duplicado: {str(e)[:120]}"), status_code=303)
 
-
-        empresa_slug = re.sub(r"[^a-zA-Z0-9_-]+", "_", empresa).strip("_")
+        # Slugs para Storage path
+        empresa_slug = re.sub(r"[^a-zA-Z0-9_-]+", "_", empresa_nombre).strip("_")
         user_slug = re.sub(r"[^a-zA-Z0-9_-]+", "_", user).strip("_")
 
         # Leer bytes
         pdf_bytes = await file.read()
-
-        if len(pdf_bytes) > MAX_PDF_SIZE:
-            return RedirectResponse(
-               url="/?ok=0&err=" + quote("El archivo supera el límite de 20MB"),
-               status_code=303
-            )
-
         if not pdf_bytes:
             return RedirectResponse(url="/?ok=0&err=" + quote("Archivo vacío"), status_code=303)
 
+        if len(pdf_bytes) > MAX_PDF_SIZE:
+            return RedirectResponse(url="/?ok=0&err=" + quote("El archivo supera el límite de 20MB"), status_code=303)
+
         # Ruta en Storage
-        storage_path = f"{empresa_slug}/{user_slug}/{file.filename}"
+        storage_path = f"{empresa_slug}/{user_slug}/{fname}"
 
         # Subir a Supabase Storage
+        # (Esto no pasa por RLS como las tablas; lo dejamos tal cual para no romper)
         try:
             supabase.storage.from_(BUCKET).upload(
                 path=storage_path,
@@ -603,27 +950,24 @@ async def subir_pdf(request: Request, file: UploadFile = File(...)):
                 file_options={"content-type": file.content_type or "application/pdf"}
             )
         except Exception:
-            # Si existe o falla, renombrar con timestamp y reintentar
             ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-            storage_path = f"{empresa_slug}/{user_slug}/{ts}_{file.filename}"
+            storage_path = f"{empresa_slug}/{user_slug}/{ts}_{fname}"
             supabase.storage.from_(BUCKET).upload(
                 path=storage_path,
                 file=pdf_bytes,
                 file_options={"content-type": file.content_type or "application/pdf"}
             )
 
-        # Extraer texto
+        # Extraer texto + datos
         texto = extraer_texto_pdf_bytes(pdf_bytes)
-
-        # Extraer datos
         fecha_fin = extraer_fecha_fin(texto)
         tipo_contrato = clasificar_contrato(texto)
 
-        # Guardar en Postgres
-        supabase.table("contratos").insert({
-            "empresa": empresa,
+        # Insert en Postgres (CON RLS)
+        sb.table("contratos").insert({
+            "empresa_id": empresa_id,
             "owner": user,
-            "archivo_pdf": file.filename,
+            "archivo_pdf": fname,
             "storage_path": storage_path,
             "fecha_fin": fecha_fin,
             "tipo": tipo_contrato,
@@ -644,24 +988,29 @@ def descargar_pdf(request: Request, path: str):
     if not user:
         return RedirectResponse(url="/login", status_code=303)
 
+    sb = supabase_user_client(request)
+    if sb is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    # Necesitamos supabase (service) para firmar URL de Storage
     if supabase is None:
         return RedirectResponse(url="/?ok=0&err=" + quote("Supabase no disponible"), status_code=303)
 
-    empresa = get_empresa(user) or "MiEmpresa"
+    empresa_id = get_empresa_id(user)
+    if not empresa_id:
+        return RedirectResponse(url="/?ok=0&err=" + quote("No tienes empresa asignada"), status_code=303)
 
-    # Seguridad: comprobar que ese storage_path pertenece a este usuario/empresa
+    # ✅ Seguridad con RLS: esta query solo devuelve filas permitidas por las policies
     try:
         res = (
-            supabase
-            .table("contratos")
+            sb.table("contratos")
             .select("storage_path")
-            .eq("empresa", empresa)
-            .eq("owner", user)
+            .eq("empresa_id", empresa_id)
             .eq("storage_path", path)
             .limit(1)
             .execute()
         )
-        if not (res.data and len(res.data) > 0):
+        if not res.data:
             return RedirectResponse(url="/?ok=0&err=" + quote("No autorizado"), status_code=303)
     except Exception as e:
         return RedirectResponse(url="/?ok=0&err=" + quote(str(e)[:120]), status_code=303)
@@ -676,6 +1025,225 @@ def descargar_pdf(request: Request, path: str):
     except Exception as e:
         return RedirectResponse(url="/?ok=0&err=" + quote(str(e)[:160]), status_code=303)
 
+from fastapi.responses import JSONResponse
+
+
+@app.post("/admin/borrar_contrato")
+def admin_borrar_contrato(request: Request, contrato_id: int = Form(...)):
+    user = usuario_actual(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
+
+    if get_rol(user) != "admin":
+        return RedirectResponse(url="/?ok=0&err=" + quote("Solo admin"), status_code=303)
+
+    sb = supabase_user_client(request)
+    if sb is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    empresa_id = get_empresa_id(user)
+    if not empresa_id:
+        return RedirectResponse(url="/?ok=0&err=" + quote("Admin sin empresa"), status_code=303)
+
+    # 1) Leer contrato (RLS)
+    try:
+        res = (
+            sb.table("contratos")
+            .select("*")
+            .eq("id", contrato_id)
+            .eq("empresa_id", empresa_id)
+            .limit(1)
+            .execute()
+        )
+        row = (res.data or [None])[0]
+        if not row:
+            return RedirectResponse(url="/?ok=0&err=" + quote("No existe o no autorizado"), status_code=303)
+    except Exception as e:
+        return RedirectResponse(url="/?ok=0&err=" + quote(f"Error leyendo contrato: {str(e)[:120]}"), status_code=303)
+
+    # 2) Insertar en papelera y 3) borrar de contratos
+    try:
+        sb.table("contratos_papelera").insert(row).execute()
+    except Exception as e:
+        return RedirectResponse(url="/?ok=0&err=" + quote(f"Error moviendo a papelera: {str(e)[:120]}"), status_code=303)
+
+    try:
+        sb.table("contratos").delete().eq("id", contrato_id).eq("empresa_id", empresa_id).execute()
+    except Exception as e:
+        # rollback: si no pudo borrar en contratos, quitamos el duplicado de papelera
+        try:
+            sb.table("contratos_papelera").delete().eq("id", contrato_id).eq("empresa_id", empresa_id).execute()
+        except:
+            pass
+        return RedirectResponse(url="/?ok=0&err=" + quote(f"Error borrando contrato: {str(e)[:120]}"), status_code=303)
+
+    return RedirectResponse(url="/?ok=1", status_code=303)
+
+
+
+@app.get("/admin/papelera")
+def admin_papelera(request: Request):
+    user = usuario_actual(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
+    if get_rol(user) != "admin":
+        return RedirectResponse(url="/", status_code=303)
+
+    sb = supabase_user_client(request)
+    if sb is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    empresa_id = get_empresa_id(user)
+    if not empresa_id:
+        return RedirectResponse(url="/?ok=0&err=" + quote("Admin sin empresa"), status_code=303)
+
+    res = (
+        sb.table("contratos_papelera")
+        .select("id,archivo_pdf,fecha_fin,tipo,owner,storage_path,creado_en")
+        .eq("empresa_id", empresa_id)
+        .order("creado_en", desc=True)
+        .limit(300)
+        .execute()
+    )
+
+    papelera = res.data or []
+    return templates.TemplateResponse("papelera.html", {
+        "request": request,
+        "user": user,
+        "rol": "admin",
+        "papelera": papelera
+    })
+
+
+@app.post("/admin/restaurar_contrato")
+def admin_restaurar_contrato(request: Request, contrato_id: int = Form(...)):
+    user = usuario_actual(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
+
+    if get_rol(user) != "admin":
+        return RedirectResponse(url="/", status_code=303)
+
+    if supabase_service is None:
+        return RedirectResponse(url="/admin/papelera?err=" + quote("Supabase service no disponible"), status_code=303)
+
+    empresa_id = get_empresa_id(user)
+    if not empresa_id:
+        return RedirectResponse(url="/admin/papelera?err=" + quote("Admin sin empresa"), status_code=303)
+
+    # 1) leer de papelera (con service role para evitar RLS)
+    try:
+        res = (
+            supabase_service.table("contratos_papelera")
+            .select("*")
+            .eq("id", contrato_id)
+            .eq("empresa_id", empresa_id)
+            .limit(1)
+            .execute()
+        )
+        row = (res.data or [None])[0]
+        if not row:
+            return RedirectResponse(url="/admin/papelera", status_code=303)
+    except Exception as e:
+        return RedirectResponse(url="/admin/papelera?err=" + quote(f"Error leyendo papelera: {str(e)[:160]}"), status_code=303)
+
+    # 2) si YA existe un contrato con el mismo storage_path en contratos, no intentes insertar → solo limpia papelera
+    storage_path = row.get("storage_path")
+    try:
+        if storage_path:
+            ex = (
+                supabase_service.table("contratos")
+                .select("id")
+                .eq("empresa_id", empresa_id)
+                .eq("storage_path", storage_path)
+                .limit(1)
+                .execute()
+            )
+            if ex.data:
+                # ya está restaurado (o duplicado), limpiamos papelera
+                supabase_service.table("contratos_papelera").delete().eq("id", contrato_id).eq("empresa_id", empresa_id).execute()
+                return RedirectResponse(url="/?ok=1", status_code=303)
+    except Exception:
+        # si esta comprobación falla, seguimos al insert (no bloquea)
+        pass
+
+    # 3) insertar en contratos SIN id (para evitar conflictos con PK)
+    row_to_insert = dict(row)
+    row_to_insert.pop("id", None)
+
+    try:
+        supabase_service.table("contratos").insert(row_to_insert).execute()
+    except Exception as e:
+        msg = str(e)
+        # Si es UNIQUE (23505), significa "ya existe algo equivalente"
+        if "23505" in msg or "duplicate key value violates unique constraint" in msg.lower():
+            # limpiamos papelera igualmente para que no se quede atascado
+            try:
+                supabase_service.table("contratos_papelera").delete().eq("id", contrato_id).eq("empresa_id", empresa_id).execute()
+            except Exception:
+                pass
+            return RedirectResponse(url="/?ok=1", status_code=303)
+
+        return RedirectResponse(url="/admin/papelera?err=" + quote(f"Error restaurando: {msg[:180]}"), status_code=303)
+
+    # 4) borrar de papelera (service role)
+    try:
+        supabase_service.table("contratos_papelera").delete().eq("id", contrato_id).eq("empresa_id", empresa_id).execute()
+    except Exception as e:
+        return RedirectResponse(url="/admin/papelera?err=" + quote(f"Restaurado, pero no se pudo limpiar papelera: {str(e)[:160]}"), status_code=303)
+
+    return RedirectResponse(url="/?ok=1", status_code=303)
+
+
+@app.post("/admin/borrar_definitivo")
+def admin_borrar_definitivo(request: Request, contrato_id: int = Form(...)):
+    user = usuario_actual(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
+
+    if get_rol(user) != "admin":
+        return RedirectResponse(url="/", status_code=303)
+
+    if supabase_service is None:
+        return RedirectResponse(url="/admin/papelera?err=" + quote("Supabase service no disponible"), status_code=303)
+
+    empresa_id = get_empresa_id(user)
+    if not empresa_id:
+        return RedirectResponse(url="/admin/papelera?err=" + quote("Admin sin empresa"), status_code=303)
+
+    # 1) leer storage_path desde papelera
+    try:
+        res = (
+            supabase_service.table("contratos_papelera")
+            .select("storage_path")
+            .eq("id", contrato_id)
+            .eq("empresa_id", empresa_id)
+            .limit(1)
+            .execute()
+        )
+        row = (res.data or [None])[0]
+        if not row:
+            return RedirectResponse(url="/admin/papelera", status_code=303)
+        storage_path = row.get("storage_path")
+    except Exception as e:
+        return RedirectResponse(url="/admin/papelera?err=" + quote(f"Error leyendo papelera: {str(e)[:160]}"), status_code=303)
+
+    # 2) borrar fila de papelera (service role, sin RLS)
+    try:
+        supabase_service.table("contratos_papelera").delete().eq("id", contrato_id).eq("empresa_id", empresa_id).execute()
+    except Exception as e:
+        return RedirectResponse(url="/admin/papelera?err=" + quote(f"No se pudo borrar de papelera: {str(e)[:160]}"), status_code=303)
+
+    # 3) borrar archivo de storage (si existe)
+    if storage_path:
+        try:
+            supabase_service.storage.from_(BUCKET).remove([storage_path])
+        except Exception as e:
+            return RedirectResponse(url="/admin/papelera?err=" + quote(f"Borrado en DB, pero fallo borrando archivo: {str(e)[:160]}"), status_code=303)
+
+    return RedirectResponse(url="/admin/papelera?ok=1", status_code=303)
+
+
 
 # -----------------------------
 # Consultas
@@ -686,26 +1254,23 @@ def vencen_en(request: Request, dias: int = 30):
     if not user:
         return RedirectResponse(url="/login", status_code=303)
 
-    if supabase is None:
-        return {
-            "ok": False,
-            "error": "Supabase no disponible",
-            "resultados": []
-        }
+    sb = supabase_user_client(request)
+    if sb is None:
+        return {"ok": False, "error": "Sesión expirada. Vuelve a iniciar sesión.", "resultados": []}
 
-    empresa = get_empresa(user) or "MiEmpresa"
+    empresa_id = get_empresa_id(user)
+    if not empresa_id:
+        return {"ok": False, "error": "No tienes empresa asignada", "resultados": []}
 
-    # Solo devuelve del usuario actual (seguridad)
-    alertas = obtener_alertas_supabase(empresa=empresa, dias=dias, owner=user)
+    # RLS filtra automáticamente (admin ve empresa, miembro ve lo suyo)
+    alertas = obtener_alertas_supabase(sb, empresa_id=empresa_id, dias=dias)
 
-    resultados = []
-    for a in alertas:
-        resultados.append({
-            "archivo_pdf": a["archivo_pdf"],
-            "tipo": a.get("tipo", "otro"),
-            "vence_el": a["vence_el"],
-            "dias_restantes": a["dias_restantes"]
-        })
+    resultados = [{
+        "archivo_pdf": a.get("archivo_pdf"),
+        "tipo": a.get("tipo", "otro"),
+        "vence_el": a.get("vence_el"),
+        "dias_restantes": a.get("dias_restantes")
+    } for a in alertas]
 
     return {
         "ok": True,
@@ -721,12 +1286,16 @@ def alertas_vencimiento(request: Request, dias: int = 30):
     if not user:
         return RedirectResponse(url="/login", status_code=303)
 
-    if supabase is None:
-        return {"ok": False, "error": "Supabase no disponible", "alertas": []}
+    sb = supabase_user_client(request)
+    if sb is None:
+        return {"ok": False, "error": "Sesión expirada. Vuelve a iniciar sesión.", "alertas": []}
 
-    empresa = get_empresa(user) or "Mi empresa"
+    empresa_id = get_empresa_id(user)
+    if not empresa_id:
+        return {"ok": False, "error": "No tienes empresa asignada", "alertas": []}
 
-    alertas = obtener_alertas_supabase(empresa=empresa, dias=dias, owner=user)
+    # RLS filtra automáticamente
+    alertas = obtener_alertas_supabase(sb, empresa_id=empresa_id, dias=dias)
 
     return {
         "ok": True,
@@ -741,38 +1310,71 @@ async def preguntar_contratos(request: Request, pregunta: str = Form(...)):
     if not user:
         return RedirectResponse(url="/login", status_code=303)
 
-    if supabase is None:
-        return templates.TemplateResponse("respuesta.html", {
-            "request": request,
-            "pregunta": pregunta,
-            "respuesta": "❌ Supabase no está disponible ahora mismo. Inténtalo de nuevo en unos minutos."
-        })
+    rol = get_rol(user)
+    empresa_id = get_empresa_id(user)
 
-    empresa = get_empresa(user) or "Mi empresa"
+    sb = supabase_user_client(request)
+    if sb is None:
+        return RedirectResponse(url="/login", status_code=303)
 
-    # Traer contratos del usuario desde Supabase
-    try:
-        items = obtener_contratos_supabase(empresa=empresa, owner=user, limit=300)
-    except Exception as e:
-        return templates.TemplateResponse("respuesta.html", {
-            "request": request,
-            "pregunta": pregunta,
-            "respuesta": f"❌ Error consultando Supabase: {str(e)[:180]}"
-        })
+    if not empresa_id:
+        return RedirectResponse(url="/config", status_code=303)
 
-    pregunta_l = (pregunta or "").lower()
+    # =============================
+    # 1) Interpretar la pregunta
+    # =============================
+    pregunta_l = (pregunta or "").lower().strip()
     hoy = datetime.now().date()
+    hoy_iso = hoy.isoformat()
 
-    # Detectar "en X días"
+    ventana = 10  # rango ±10 días
+
+    solo_vencidos = "vencidos" in pregunta_l
+    solo_sin_fecha = "sin fecha" in pregunta_l or "sin vencimiento" in pregunta_l
+
+    # -----------------------------
+    # PARSER DÍAS / MESES
+    # -----------------------------
     dias = None
-    m = re.search(r"(\d+)\s*d[ií]as", pregunta_l)
-    if m:
-        try:
-            dias = int(m.group(1))
-        except:
-            dias = None
 
-    # Detectar tipo si el usuario escribe "alquiler", "seguro", etc.
+    # 1) "X días"
+    m_dias = re.search(r"\b(\d{1,4})\s*d[ií]as?\b", pregunta_l)
+    if m_dias:
+        dias = int(m_dias.group(1))
+
+    # 2) "en X" (si no habla de meses)
+    if dias is None and "mes" not in pregunta_l:
+        m_en = re.search(r"\ben\s+(\d{1,4})\b", pregunta_l)
+        if m_en:
+            dias = int(m_en.group(1))
+
+    # 3) Meses
+    meses = None
+    m_mes = re.search(r"\b(\d{1,3})\s*mes(?:es)?\b", pregunta_l)
+    if m_mes:
+        meses = int(m_mes.group(1))
+
+    dias_extra = 0
+    m_extra = re.search(r"y\s+(\d{1,4})\s*d[ií]as?\b", pregunta_l)
+    if m_extra:
+        dias_extra = int(m_extra.group(1))
+
+    if meses is not None:
+        dias = (meses * 30) + dias_extra
+
+    # 4) Número suelto
+    if dias is None and "mes" not in pregunta_l:
+        m_num = re.search(r"\b(\d{1,4})\b", pregunta_l)
+        if m_num and ("venc" in pregunta_l or "dias" in pregunta_l or "día" in pregunta_l):
+            dias = int(m_num.group(1))
+
+    # Default
+    if dias is None and "venc" in pregunta_l:
+        dias = 30
+
+    # -----------------------------
+    # FILTRO TIPO
+    # -----------------------------
     tipos_validos = ["alquiler", "seguro", "servicios", "laboral", "préstamo", "prestamo", "otro"]
     tipo_filtro = None
     for t in tipos_validos:
@@ -780,41 +1382,119 @@ async def preguntar_contratos(request: Request, pregunta: str = Form(...)):
             tipo_filtro = "préstamo" if t == "prestamo" else t
             break
 
+    # =============================
+    # 2) QUERY SUPABASE
+    # =============================
+    query = (
+        sb.table("contratos")
+        .select("id,archivo_pdf,fecha_fin,tipo,owner,storage_path,creado_en")
+        .eq("empresa_id", empresa_id)
+    )
+
+    if rol != "admin":
+        query = query.eq("owner", user)
+
+    if tipo_filtro:
+        query = query.eq("tipo", tipo_filtro)
+
+    if solo_sin_fecha:
+        query = query.is_("fecha_fin", "null").order("creado_en", desc=True)
+
+    elif solo_vencidos:
+        query = query.lt("fecha_fin", hoy_iso).order("fecha_fin", desc=True)
+
+    elif dias is not None:
+        objetivo = hoy + timedelta(days=dias)
+        inicio = (objetivo - timedelta(days=ventana)).isoformat()
+        fin = (objetivo + timedelta(days=ventana)).isoformat()
+
+        query = (
+            query
+            .gte("fecha_fin", inicio)
+            .lte("fecha_fin", fin)
+            .order("fecha_fin", desc=False)
+        )
+    else:
+        query = query.order("creado_en", desc=True)
+
+    query = query.limit(300)
+
+    try:
+        items = query.execute().data or []
+    except Exception as e:
+        msg = str(e).lower()
+        if "jwt expired" in msg or "pgrst303" in msg:
+            return RedirectResponse(url="/login", status_code=303)
+
+        return templates.TemplateResponse("respuesta.html", {
+            "request": request,
+            "pregunta": pregunta,
+            "resumen": f"❌ Error consultando Supabase: {str(e)[:180]}",
+            "resultados": [],
+            "rol": rol,
+        })
+
+    # =============================
+    # 3) FORMATEAR RESULTADOS
+    # =============================
     resultados = []
 
     for it in items:
-        fecha = it.get("fecha_fin")
-        if not fecha:
+        fecha_raw = it.get("fecha_fin")
+        archivo = it.get("archivo_pdf") or ""
+        tipo = it.get("tipo") or "otro"
+        owner = it.get("owner") or ""
+        storage_path = it.get("storage_path") or ""
+        cid = it.get("id")
+
+        if not fecha_raw:
+            resultados.append({
+                "id": cid,
+                "archivo": archivo,
+                "tipo": tipo,
+                "fecha": None,
+                "estado": "Sin fecha",
+                "dias": None,
+                "owner": owner,
+                "storage_path": storage_path,
+            })
             continue
 
-        # fecha_fin suele venir como "YYYY-MM-DD"
         try:
-            fin = datetime.fromisoformat(str(fecha)).date()
+            fecha_str = str(fecha_raw)[:10]
+            fin_date = datetime.fromisoformat(fecha_str).date()
         except:
             continue
 
-        incluir = True
+        dias_restantes = (fin_date - hoy).days
+        estado = "Vencido" if fin_date < hoy else "Próximo"
 
-        if dias is not None:
-            incluir = fin <= (hoy + timedelta(days=dias))
+        resultados.append({
+            "id": cid,
+            "archivo": archivo,
+            "tipo": tipo,
+            "fecha": fin_date.isoformat(),
+            "estado": estado,
+            "dias": dias_restantes,
+            "owner": owner,
+            "storage_path": storage_path,
+        })
 
-        if tipo_filtro:
-            incluir = incluir and (it.get("tipo") == tipo_filtro)
+    resultados.sort(key=lambda r: (r["dias"] is None, r["dias"] or 999999))
 
-        if incluir:
-            resultados.append(
-                f"{it.get('archivo_pdf')} ({it.get('tipo', 'otro')}) vence el {str(fecha)}"
-            )
-
-    if not resultados:
-        respuesta = "No encontré coincidencias con esa pregunta."
-    else:
-        respuesta = "\n".join(resultados)
+    total = len(resultados)
+    resumen = (
+        f"Se encontraron {total} contratos alrededor de {dias} días (±{ventana})."
+        if dias is not None else
+        f"Se encontraron {total} contratos."
+    )
 
     return templates.TemplateResponse("respuesta.html", {
         "request": request,
         "pregunta": pregunta,
-        "respuesta": respuesta
+        "resultados": resultados,
+        "resumen": resumen,
+        "rol": rol,
     })
 
 
@@ -838,17 +1518,25 @@ def config_get(request: Request):
             "error": "Supabase no disponible"
         })
 
-    # Leer usuario UNA vez
+    # Leer usuario
     u = obtener_usuario_db(user) or {}
-    empresa = (u.get("empresa") or "")
-    codigo = (u.get("empresa_codigo") or "")
-    email = (u.get("email_alertas") or "")
     rol = (u.get("rol") or "admin").strip().lower()
+    email = (u.get("email_alertas") or "")
 
-    # Si es admin y tiene empresa pero aún no tiene código, se lo generamos
-    if rol == "admin" and empresa and not codigo:
-        codigo = generar_codigo_empresa()
-        set_empresa_codigo(user, codigo)
+    # Leer empresa desde empresa_id
+    empresa_id = u.get("empresa_id")
+    empresa = ""
+    codigo = ""
+
+    if empresa_id:
+        erow = obtener_empresa_db(str(empresa_id)) or {}
+        empresa = erow.get("nombre", "") or ""
+        codigo = erow.get("codigo", "") or ""
+
+        # Si es admin y hay empresa pero no hay código, generarlo en empresas
+        if rol == "admin" and empresa and not codigo:
+            codigo = generar_codigo_empresa()
+            supabase.table("empresas").update({"codigo": codigo}).eq("id", str(empresa_id)).execute()
 
     return templates.TemplateResponse("config.html", {
         "request": request,
@@ -859,7 +1547,6 @@ def config_get(request: Request):
         "ok": False,
         "error": None
     })
-
 
 
 @app.post("/config")
@@ -888,32 +1575,60 @@ def config_post(request: Request, email: str = Form(""), empresa: str = Form("")
 
     empresa_in = (empresa or "").strip()
 
-    # Empresa solo admin
     if empresa_in:
         if rol != "admin":
-            # devolvemos lo que ya hay en DB
             u2 = obtener_usuario_db(user) or {}
+            empresa_id_2 = u2.get("empresa_id")
+            erow2 = obtener_empresa_db(empresa_id_2) or {}
+
             return templates.TemplateResponse("config.html", {
                 "request": request,
-                "empresa": u2.get("empresa") or "",
-                "codigo": u2.get("empresa_codigo") or "",
+                "empresa": erow2.get("nombre", ""),
+                "codigo": erow2.get("codigo", ""),
                 "email": u2.get("email_alertas") or (email or ""),
                 "rol": rol,
                 "ok": False,
                 "error": "Solo un admin puede cambiar la empresa."
             })
-        set_empresa(user, empresa_in)
 
-    # Releer para devolver valores consistentes
+        # --- SOLO ADMIN LLEGA AQUÍ ---
+        empresa_id = get_empresa_id(user)
+
+        if not empresa_id:
+            res_new = supabase.table("empresas").insert({"nombre": empresa_in}).execute()
+            new_row = (res_new.data or [None])[0]
+
+            if not new_row:
+                return templates.TemplateResponse("config.html", {
+                    "request": request,
+                    "empresa": "",
+                    "codigo": "",
+                    "email": email or "",
+                    "rol": rol,
+                    "ok": False,
+                    "error": "No se pudo crear la empresa"
+                })
+
+            set_empresa_id(user, new_row["id"])
+            empresa_id = new_row["id"]  # ✅ importante para leer en esta misma request
+
+        else:
+            supabase.table("empresas").update({"nombre": empresa_in}).eq("id", empresa_id).execute()
+
+    # BLOQUE PARA LEER EMPRESA (desde tabla empresas)
+    empresa_id = get_empresa_id(user)
+    erow = obtener_empresa_db(empresa_id) or {}
+    empresa_final = erow.get("nombre", "")
+    codigo_final = erow.get("codigo", "")
+
+    # Leer email actualizado desde DB
     u3 = obtener_usuario_db(user) or {}
-    empresa_final = (u3.get("empresa") or "")
-    codigo_final = (u3.get("empresa_codigo") or "")
     email_final = (u3.get("email_alertas") or "")
 
-    # Si ya hay empresa y no hay código, generarlo
-    if rol == "admin" and empresa_final and not codigo_final:
+    # Si falta código (solo admin), guardarlo en empresas
+    if rol == "admin" and empresa_id and empresa_final and not codigo_final:
         codigo_final = generar_codigo_empresa()
-        set_empresa_codigo(user, codigo_final)
+        supabase.table("empresas").update({"codigo": codigo_final}).eq("id", empresa_id).execute()
 
     return templates.TemplateResponse("config.html", {
         "request": request,
@@ -924,6 +1639,7 @@ def config_post(request: Request, email: str = Form(""), empresa: str = Form("")
         "ok": True,
         "error": None
     })
+
 
 
 # -----------------------------
@@ -951,16 +1667,19 @@ def enviar_alertas(request: Request, dias: int = 30):
     if not user:
         return RedirectResponse(url="/login", status_code=303)
 
-    if supabase is None:
-        return {"ok": False, "error": "Supabase no disponible", "enviados": []}
+    sb = supabase_user_client(request)
+    if sb is None:
+        return {"ok": False, "error": "Sesión expirada. Vuelve a iniciar sesión.", "enviados": []}
 
-    empresa = get_empresa(user) or "Mi empresa"
+    empresa_id = get_empresa_id(user)
+    if not empresa_id:
+        return {"ok": False, "error": "No tienes empresa asignada", "enviados": []}
+
     destino = get_email_alertas(user)
-
     if not destino:
         return {"ok": False, "error": "No tienes email configurado en /config", "enviados": []}
 
-    alertas = obtener_alertas_supabase(empresa=empresa, dias=dias, owner=user)
+    alertas = obtener_alertas_supabase(sb, empresa_id=empresa_id, dias=dias)
 
     if not alertas:
         return {"ok": True, "mensaje": "No hay contratos por vencer", "enviados": []}
@@ -976,7 +1695,4 @@ def enviar_alertas(request: Request, dias: int = 30):
     except Exception as e:
         return {"ok": False, "error": f"Fallo enviando email: {str(e)[:180]}", "enviados": []}
 
-    return {
-        "ok": True,
-        "enviados": [{"owner": user, "destino": destino, "num_alertas": len(alertas)}]
-    }
+    return {"ok": True, "enviados": [{"owner": user, "destino": destino, "num_alertas": len(alertas)}]}

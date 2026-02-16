@@ -1,26 +1,106 @@
-<!DOCTYPE html>
-<html>
-<head><title>Registro</title></head>
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Crear cuenta</title>
+  <style>
+    :root{--bg:#0b1220;--card:rgba(255,255,255,.04);--line:rgba(255,255,255,.10);--muted:#9ca3af;--text:#e5e7eb;--brand:#60a5fa;}
+    *{box-sizing:border-box}
+    body{
+      margin:0;min-height:100vh;display:grid;place-items:center;
+      background:
+        radial-gradient(1200px 600px at 10% 10%, rgba(96,165,250,.18), transparent 60%),
+        radial-gradient(900px 500px at 90% 20%, rgba(34,197,94,.12), transparent 55%),
+        var(--bg);
+      color:var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    }
+    .card{
+      width:min(460px, 92vw);
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:18px;
+      box-shadow:0 18px 50px rgba(0,0,0,.35)
+    }
+    h1{margin:0 0 6px;font-size:24px;font-weight:900}
+    p{margin:0 0 14px;color:var(--muted);font-size:14px;line-height:1.35}
+    label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+    input{
+      width:100%;
+      padding:11px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      outline:none
+    }
+    input::placeholder{color:#94a3b8}
+    .row{display:flex; gap:10px; align-items:center; margin-top:14px}
+    .btn{
+      flex:1;
+      padding:11px 12px;
+      border-radius:12px;
+      border:1px solid transparent;
+      cursor:pointer;
+      font-weight:800;
+      background:linear-gradient(180deg, rgba(96,165,250,.95), rgba(37,99,235,.95));
+      color:white
+    }
+    .btn:hover{filter:brightness(1.05)}
+    .hint{margin-top:8px;color:var(--muted);font-size:12px}
+    .link{color:var(--brand); text-decoration:none; font-weight:700}
+    .link:hover{text-decoration:underline}
+    .err{margin-top:12px;padding:10px 12px;border-radius:12px;border:1px solid rgba(239,68,68,.35);background:rgba(239,68,68,.10);color:#fecaca}
+    .ok{margin-top:12px;padding:10px 12px;border-radius:12px;border:1px solid rgba(34,197,94,.35);background:rgba(34,197,94,.10);color:#bbf7d0}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media(max-width:520px){.split{grid-template-columns:1fr}}
+  </style>
+</head>
 <body>
-  <h1>Crear cuenta</h1>
+  <div class="card">
+    <h1>Crear cuenta</h1>
+    <p>
+      Crea tu usuario. Si tienes un <b>código de empresa</b>, introdúcelo para unirte como <b>miembro</b>.
+      Si lo dejas vacío, se creará una empresa nueva y serás <b>admin</b>.
+    </p>
 
-  {% if error %}
-    <p style="color:red;">{{ error }}</p>
-  {% endif %}
+    <form action="/registro" method="post">
+      <div class="split">
+        <div>
+          <label>Usuario</label>
+          <input name="username" placeholder="jenni" required />
+        </div>
+        <div>
+          <label>Código de empresa (opcional)</label>
+          <input name="codigo_empresa" placeholder="D539ED" />
+        </div>
+      </div>
 
-  <form action="/registro" method="post">
-    <label>Usuario</label><br>
-    <input name="username" style="width:260px;"><br><br>
+      <label>Contraseña</label>
+      <input name="password" type="password" placeholder="••••••••" required />
 
-    <label>Contraseña</label><br>
-    <input name="password" type="password" style="width:260px;"><br><br>
+      <div class="hint">
+        Consejo: usa una contraseña que no reutilices en otros sitios.
+      </div>
 
-    <label>Código de empresa (opcional)</label><br>
-    <input name="codigo_empresa" style="width:260px;"><br><br>
+      <div class="row">
+        <button class="btn" type="submit">Crear cuenta</button>
+      </div>
+    </form>
 
-    <button type="submit">Crear</button>
-  </form>
+    {% if error %}
+      <div class="err">❌ {{ error }}</div>
+    {% endif %}
 
-  <p><a href="/login">Volver al login</a></p>
+    {% if ok %}
+      <div class="ok">Cuenta creada ✅</div>
+    {% endif %}
+
+    <p style="margin-top:14px;">
+      ¿Ya tienes cuenta? <a class="link" href="/login">Entrar</a>
+    </p>
+  </div>
 </body>
 </html>
