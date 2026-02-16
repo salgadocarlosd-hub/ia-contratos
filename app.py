@@ -685,6 +685,15 @@ def logout(request: Request):
     return RedirectResponse(url="/login", status_code=303)
 
 
+from fastapi.responses import JSONResponse
+
+@app.get("/__debug_session")
+def debug_session(request: Request):
+    # OJO: endpoint temporal. Luego lo borramos.
+    return JSONResponse({
+        "session": dict(request.session)
+    })
+
 # -----------------------------
 # Dashboard
 # -----------------------------
