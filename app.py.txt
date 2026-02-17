@@ -29,6 +29,7 @@ from io import BytesIO
 from supabase import create_client
 from dotenv import load_dotenv
 
+import requests
 import base64
 
 load_dotenv()
@@ -1889,20 +1890,36 @@ def config_post(request: Request, email: str = Form(""), empresa: str = Form("")
 # -----------------------------
 # Email
 # -----------------------------
-def enviar_email(destino, asunto, mensaje):
+def enviar_email(destino: str, asunto: str, mensaje: str):
     """
-    IMPORTANTE: no pongas credenciales hardcodeadas aquí.
-    Usa variables de entorno:
-      - SMTP_USER
-      - SMTP_APP_PASS
+    Envío de email vía Resend (API HTTPS).
+    Variables de entorno requeridas:
+      - RESEND_API_KEY
+      - MAIL_FROM  (ej: "Contralys <onboarding@resend.dev>")
     """
-    smtp_user = os.environ.get("SMTP_USER", "")
-    smtp_pass = os.environ.get("SMTP_APP_PASS", "")
-    if not smtp_user or not smtp_pass:
-        raise RuntimeError("Faltan SMTP_USER o SMTP_APP_PASS en variables de entorno.")
+    api_key = os.environ.get("RESEND_API_KEY", "").strip()
+    mail_from = os.environ.get("MAIL_FROM", "").strip()
 
-    yag = yagmail.SMTP(smtp_user, smtp_pass)
-    yag.send(destino, asunto, mensaje)
+    if not api_key or not mail_from:
+        raise RuntimeError("Faltan RESEND_API_KEY o MAIL_FROM en variables de entorno.")
+
+    resp = requests.post(
+        "https://api.resend.com/emails",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "from": mail_from,
+            "to": [destino],
+            "subject": asunto,
+            "text": mensaje,
+        },
+        timeout=30,
+    )
+
+    if resp.status_code >= 300:
+        raise RuntimeError(f"Resend error {resp.status_code}: {resp.text[:300]}")
 
 
 @app.get("/enviar_alertas/")
