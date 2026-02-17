@@ -1942,6 +1942,10 @@ def enviar_alertas(request: Request, dias: int = 30):
     return {"ok": True, "enviados": [{"owner": user, "destino": destino, "num_alertas": len(alertas)}]}
 
 
+from datetime import datetime, timedelta
+from fastapi import Header, HTTPException
+import os
+
 @app.post("/jobs/enviar_alertas_diarias")
 def job_enviar_alertas_diarias(x_cron_secret: str = Header(None)):
     if x_cron_secret != os.environ.get("CRON_SECRET"):
@@ -1953,17 +1957,41 @@ def job_enviar_alertas_diarias(x_cron_secret: str = Header(None)):
     hoy = datetime.utcnow().date()
     limite = hoy + timedelta(days=30)
 
-    # 1) Traer empresas
     empresas = supabase_service.table("empresas").select("id,nombre").execute().data or []
 
-    empresas_notificadas = 0
+    # ====== contadores globales ======
+    empresas_total = len(empresas)
+    empresas_con_admins = 0
+    empresas_con_destinos = 0
+    empresas_con_contratos = 0
+    empresas_envio_ok = 0
+    total_contratos_encontrados = 0
 
+    # ====== log GLOBAL SIEMPRE (job_run) ======
+    try:
+        supabase_service.table("audit_log").insert({
+            "empresa_id": None,  # global (sin empresa)
+            "actor_username": "system",
+            "actor_auth_id": None,
+            "action": "job_run",
+            "entity_type": "cron",
+            "entity_id": "enviar_alertas_diarias",
+            "metadata": {
+                "dias": 30,
+                "empresas_total": empresas_total,
+                "fecha_hoy": hoy.isoformat(),
+                "fecha_limite": limite.isoformat()
+            }
+        }).execute()
+    except Exception as e:
+        logger.warning("❌ No se pudo insertar job_run en audit_log: %s", str(e)[:200])
+
+    # ====== loop empresas ======
     for emp in empresas:
         empresa_id = emp.get("id")
         if not empresa_id:
             continue
 
-        # 2) Obtener emails de admins (usuarios_app)
         admins = (
             supabase_service.table("usuarios_app")
             .select("username,email_alertas")
@@ -1973,13 +2001,17 @@ def job_enviar_alertas_diarias(x_cron_secret: str = Header(None)):
             .data
         ) or []
 
-        destinos = [a.get("email_alertas", "").strip() for a in admins if (a.get("email_alertas") or "").strip()]
-        destinos = list(dict.fromkeys(destinos))  # quitar duplicados
+        if admins:
+            empresas_con_admins += 1
 
-        if not destinos:
+        destinos = [a.get("email_alertas", "").strip() for a in admins if (a.get("email_alertas") or "").strip()]
+        destinos = list(dict.fromkeys(destinos))
+
+        if destinos:
+            empresas_con_destinos += 1
+        else:
             continue
 
-        # 3) Contratos que vencen en 30 días
         contratos = (
             supabase_service.table("contratos")
             .select("id,archivo_pdf,tipo,fecha_fin,owner,storage_path")
@@ -1992,19 +2024,20 @@ def job_enviar_alertas_diarias(x_cron_secret: str = Header(None)):
             .data
         ) or []
 
-        if not contratos:
+        if contratos:
+            empresas_con_contratos += 1
+            total_contratos_encontrados += len(contratos)
+        else:
             continue
 
-        lineas = []
-        for c in contratos:
-            lineas.append(
-                f"- {c.get('archivo_pdf','')} · {c.get('tipo','otro')} · vence {str(c.get('fecha_fin'))[:10]} · responsable {c.get('owner','')}"
-            )
+        lineas = [
+            f"- {c.get('archivo_pdf','')} · {c.get('tipo','otro')} · vence {str(c.get('fecha_fin'))[:10]} · responsable {c.get('owner','')}"
+            for c in contratos
+        ]
 
         asunto = "Contralys · Alertas de vencimiento (≤ 30 días)"
         cuerpo = "Contratos próximos a vencer:\n\n" + "\n".join(lineas) + "\n\n— Contralys"
 
-        # 4) Enviar email a todos los admins configurados
         ok_envio = False
         try:
             for destino in destinos:
@@ -2016,23 +2049,52 @@ def job_enviar_alertas_diarias(x_cron_secret: str = Header(None)):
         if not ok_envio:
             continue
 
-        # 5) Log automático (sin actor, porque es job)
+        # log por-empresa (alert_sent)
         try:
             supabase_service.table("audit_log").insert({
-                                        "empresa_id": empresa_id,
-                                        "actor_username": "system",
-                                        "actor_auth_id": None,
-                                        "action": "alert_sent",
-                                        "entity_type": "contratos",
-                                        "entity_id": None,
-                                        "metadata": {"dias": 30, "cantidad": len(contratos), "destinos": destinos}
-                              }).execute()
+                "empresa_id": empresa_id,
+                "actor_username": "system",
+                "actor_auth_id": None,
+                "action": "alert_sent",
+                "entity_type": "contratos",
+                "entity_id": None,
+                "metadata": {"dias": 30, "cantidad": len(contratos), "destinos": destinos}
+            }).execute()
         except Exception as e:
             logger.warning("❌ No se pudo insertar alert_sent en audit_log: %s", str(e)[:200])
 
-        empresas_notificadas += 1
+        empresas_envio_ok += 1
 
-    return {"ok": True, "empresas_notificadas": empresas_notificadas, "dias": 30}
+    # ====== update final: otro job_run resumen (opcional pero útil) ======
+    try:
+        supabase_service.table("audit_log").insert({
+            "empresa_id": None,
+            "actor_username": "system",
+            "actor_auth_id": None,
+            "action": "job_run",
+            "entity_type": "cron",
+            "entity_id": "enviar_alertas_diarias_result",
+            "metadata": {
+                "dias": 30,
+                "empresas_total": empresas_total,
+                "empresas_con_admins": empresas_con_admins,
+                "empresas_con_destinos": empresas_con_destinos,
+                "empresas_con_contratos": empresas_con_contratos,
+                "empresas_envio_ok": empresas_envio_ok,
+                "total_contratos_encontrados": total_contratos_encontrados
+            }
+        }).execute()
+    except Exception as e:
+        logger.warning("❌ No se pudo insertar job_run_result en audit_log: %s", str(e)[:200])
+
+    return {
+        "ok": True,
+        "dias": 30,
+        "empresas_total": empresas_total,
+        "empresas_envio_ok": empresas_envio_ok,
+        "empresas_con_contratos": empresas_con_contratos,
+        "total_contratos_encontrados": total_contratos_encontrados
+    }
 
 @app.get("/debug_job_alertas")
 def debug_job_alertas():
