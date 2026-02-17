@@ -6,8 +6,10 @@ from starlette.middleware.sessions import SessionMiddleware
 from pathlib import Path
 from pypdf import PdfReader
 
+from fastapi import Header, HTTPException
 import re, json, os
 from urllib.parse import quote
+import jwt
 import logging
 from datetime import datetime, timedelta
 from dateutil import parser
@@ -28,7 +30,6 @@ from supabase import create_client
 from dotenv import load_dotenv
 
 import base64
-import json
 
 load_dotenv()
 
@@ -94,26 +95,6 @@ CARPETA_DOCS.mkdir(exist_ok=True)
 def usuario_actual(request: Request):
     return request.session.get("user")
 
-
-def get_auth_user_id_from_session(request: Request) -> str | None:
-    token = request.session.get("sb_access_token")
-    if not token:
-        return None
-
-    try:
-        # JWT = header.payload.signature
-        parts = token.split(".")
-        if len(parts) < 2:
-            return None
-
-        payload_b64 = parts[1]
-        # padding base64
-        payload_b64 += "=" * (-len(payload_b64) % 4)
-        payload = json.loads(base64.urlsafe_b64decode(payload_b64).decode("utf-8"))
-
-        return payload.get("sub")  # auth uid
-    except Exception:
-        return None
 
 def insertar_usuario_db(username: str, password_hash: str, rol: str = "admin"):
     if supabase is None:
@@ -324,6 +305,75 @@ def buscar_empresa_por_codigo(codigo: str):
     codigo = (codigo or "").strip().upper()
     res = supabase.table("empresas").select("*").eq("codigo", codigo).limit(1).execute()
     return (res.data or [None])[0]
+
+
+# -----------------------------
+# Helpers: auditoría (audit_log)
+# -----------------------------
+ALLOWED_ACTIONS = {"upload", "delete", "restore", "purge", "config_update", "download", "alert_sent"}
+ALLOWED_ENTITY_TYPES = {"contratos", "contratos_papelera", "config"}
+
+
+def get_auth_user_id_from_session(request: Request) -> str | None:
+    """
+    Extrae el auth_user_id (sub) del token de Supabase guardado en sesión.
+    No verifica firma: suficiente para auditoría interna.
+    """
+    token = request.session.get("sb_access_token")
+    if not token:
+        return None
+    try:
+        decoded = jwt.decode(token, options={"verify_signature": False})
+        return decoded.get("sub")
+    except Exception:
+        return None
+
+
+def log_event(
+    sb,
+    empresa_id: str,
+    action: str,
+    entity_type: str,
+    entity_id: str | None = None,
+    metadata: dict | None = None,
+    request: Request | None = None
+):
+    """
+    Inserta un registro de auditoría usando el cliente del usuario (sb) -> respeta RLS.
+    """
+    if not sb or not empresa_id:
+        return
+
+    action = (action or "").strip()
+    entity_type = (entity_type or "").strip()
+
+    # Evitar violar constraints
+    if action not in ALLOWED_ACTIONS:
+        logger.warning("audit_log: action no permitida: %s", action)
+        return
+    if entity_type not in ALLOWED_ENTITY_TYPES:
+        logger.warning("audit_log: entity_type no permitido: %s", entity_type)
+        return
+
+    actor_username = None
+    actor_auth_id = None
+    if request is not None:
+        actor_username = request.session.get("user")
+        actor_auth_id = get_auth_user_id_from_session(request)
+
+    try:
+        sb.table("audit_log").insert({
+            "empresa_id": empresa_id,
+            "actor_auth_id": actor_auth_id,
+            "actor_username": actor_username,
+            "action": action,
+            "entity_type": entity_type,
+            "entity_id": entity_id,
+            "metadata": metadata or {}
+        }).execute()
+    except Exception as e:
+        logger.warning("audit_log insert falló: %s", str(e)[:160])
+
 
 # -----------------------------
 # Helpers: registro contratos
@@ -572,9 +622,6 @@ def login_post(request: Request, username: str = Form(...), password: str = Form
         return templates.TemplateResponse("login.html", {"request": request, "error": "Usuario o contraseña incorrectos"})
 
 
-
-import jwt  # <- arriba del todo, con tus imports
-
 @app.get("/debug_me")
 def debug_me(request: Request):
     token = request.session.get("sb_access_token")
@@ -784,6 +831,21 @@ def dashboard(request: Request, tipo: str = None):
 
     empresa_row = obtener_empresa_db(empresa_id) if empresa_id else None
 
+    # ✅ Actividad reciente (audit_log)
+    actividad = []
+    try:
+        rlog = (
+            sb.table("audit_log")
+            .select("created_at,actor_username,action,entity_type,entity_id,metadata")
+            .eq("empresa_id", empresa_id)
+            .order("created_at", desc=True)
+            .limit(20)
+            .execute()
+        )
+        actividad = rlog.data or []
+    except Exception:
+        actividad = []
+
     # 🔒 Forzar configuración si admin no completó datos
     if rol == "admin":
         if not empresa_id or not empresa_row or not empresa_row.get("nombre") or not email_alertas:
@@ -944,7 +1006,9 @@ def dashboard(request: Request, tipo: str = None):
         "miembros": miembros,
         "grafico_labels": grafico_labels,
         "grafico_values": grafico_values,
-        "tipo_actual": tipo
+        "tipo_actual": tipo,
+        "actividad": actividad
+
     })
 
 
@@ -1049,6 +1113,21 @@ async def subir_pdf(request: Request, file: UploadFile = File(...)):
             "creado_en": datetime.utcnow().isoformat()
         }).execute()
 
+        log_event(
+            sb=sb,
+            empresa_id=empresa_id,
+            action="upload",
+            entity_type="contratos",
+            entity_id=fname,  # o puedes usar storage_path si prefieres
+            metadata={
+                "archivo_pdf": fname,
+                "storage_path": storage_path,
+                "tipo": tipo_contrato,
+                "fecha_fin": fecha_fin
+            },
+            request=request
+        )
+
 
         logger.info("Subida PDF OK user=%s storage_path=%s", user, storage_path)
         return RedirectResponse(url="/?ok=1", status_code=303)
@@ -1088,8 +1167,20 @@ def descargar_pdf(request: Request, path: str):
         )
         if not res.data:
             return RedirectResponse(url="/?ok=0&err=" + quote("No autorizado"), status_code=303)
+
     except Exception as e:
         return RedirectResponse(url="/?ok=0&err=" + quote(str(e)[:120]), status_code=303)
+
+    # ✅ Trazabilidad: registrar descarga (solo si está autorizado por RLS)
+    log_event(
+        sb=sb,
+        empresa_id=empresa_id,
+        action="download",
+        entity_type="contratos",
+        entity_id=path,
+        metadata={"storage_path": path},
+        request=request
+    )
 
     # Generar URL firmada (10 minutos)
     try:
@@ -1098,8 +1189,10 @@ def descargar_pdf(request: Request, path: str):
         if not url:
             return RedirectResponse(url="/?ok=0&err=" + quote("No se pudo generar link"), status_code=303)
         return RedirectResponse(url=url, status_code=302)
+
     except Exception as e:
         return RedirectResponse(url="/?ok=0&err=" + quote(str(e)[:160]), status_code=303)
+
 
 from fastapi.responses import JSONResponse
 
@@ -1139,7 +1232,20 @@ def admin_borrar_contrato(request: Request, contrato_id: int = Form(...)):
 
     # 2) Insertar en papelera y 3) borrar de contratos
     try:
+
         sb.table("contratos_papelera").insert(row).execute()
+
+        log_event(
+            sb=sb,
+            empresa_id=empresa_id,
+            action="delete",
+            entity_type="contratos",
+            entity_id=str(contrato_id),
+            metadata={"storage_path": row.get("storage_path"), "archivo_pdf": row.get("archivo_pdf")},
+            request=request
+        )
+
+
     except Exception as e:
         return RedirectResponse(url="/?ok=0&err=" + quote(f"Error moviendo a papelera: {str(e)[:120]}"), status_code=303)
 
@@ -1154,7 +1260,6 @@ def admin_borrar_contrato(request: Request, contrato_id: int = Form(...)):
         return RedirectResponse(url="/?ok=0&err=" + quote(f"Error borrando contrato: {str(e)[:120]}"), status_code=303)
 
     return RedirectResponse(url="/?ok=1", status_code=303)
-
 
 
 @app.get("/admin/papelera")
@@ -1207,7 +1312,11 @@ def admin_restaurar_contrato(request: Request, contrato_id: int = Form(...)):
     if not empresa_id:
         return RedirectResponse(url="/admin/papelera?err=" + quote("Admin sin empresa"), status_code=303)
 
-    # 1) leer de papelera (con service role para evitar RLS)
+    sb = supabase_user_client(request)
+    if sb is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    # 1) leer de papelera (service role para evitar RLS)
     try:
         res = (
             supabase_service.table("contratos_papelera")
@@ -1223,8 +1332,9 @@ def admin_restaurar_contrato(request: Request, contrato_id: int = Form(...)):
     except Exception as e:
         return RedirectResponse(url="/admin/papelera?err=" + quote(f"Error leyendo papelera: {str(e)[:160]}"), status_code=303)
 
-    # 2) si YA existe un contrato con el mismo storage_path en contratos, no intentes insertar → solo limpia papelera
     storage_path = row.get("storage_path")
+
+    # 2) si YA existe en contratos por storage_path, limpia papelera y listo
     try:
         if storage_path:
             ex = (
@@ -1236,29 +1346,57 @@ def admin_restaurar_contrato(request: Request, contrato_id: int = Form(...)):
                 .execute()
             )
             if ex.data:
-                # ya está restaurado (o duplicado), limpiamos papelera
                 supabase_service.table("contratos_papelera").delete().eq("id", contrato_id).eq("empresa_id", empresa_id).execute()
+                # log (como purge de papelera por duplicado)
+                log_event(
+                    sb=sb,
+                    empresa_id=empresa_id,
+                    action="purge",
+                    entity_type="contratos_papelera",
+                    entity_id=str(contrato_id),
+                    metadata={"storage_path": storage_path, "reason": "already_restored_clean"},
+                    request=request
+                )
                 return RedirectResponse(url="/?ok=1", status_code=303)
     except Exception:
-        # si esta comprobación falla, seguimos al insert (no bloquea)
         pass
 
-    # 3) insertar en contratos SIN id (para evitar conflictos con PK)
+    # 3) insertar en contratos SIN id
     row_to_insert = dict(row)
     row_to_insert.pop("id", None)
 
     try:
         supabase_service.table("contratos").insert(row_to_insert).execute()
+
+        log_event(
+            sb=sb,
+            empresa_id=empresa_id,
+            action="restore",
+            entity_type="contratos",
+            entity_id=str(contrato_id),
+            metadata={"storage_path": storage_path},
+            request=request
+        )
+
     except Exception as e:
         msg = str(e)
+
         # Si es UNIQUE (23505), significa "ya existe algo equivalente"
         if "23505" in msg or "duplicate key value violates unique constraint" in msg.lower():
-            # limpiamos papelera igualmente para que no se quede atascado
             try:
                 supabase_service.table("contratos_papelera").delete().eq("id", contrato_id).eq("empresa_id", empresa_id).execute()
+                log_event(
+                    sb=sb,
+                    empresa_id=empresa_id,
+                    action="purge",
+                    entity_type="contratos_papelera",
+                    entity_id=str(contrato_id),
+                    metadata={"storage_path": storage_path, "reason": "duplicate_restore_clean"},
+                    request=request
+                )
+                return RedirectResponse(url="/?ok=1", status_code=303)
             except Exception:
-                pass
-            return RedirectResponse(url="/?ok=1", status_code=303)
+                return RedirectResponse(url="/admin/papelera?err=" + quote(f"Duplicado detectado pero no se pudo limpiar: {msg[:180]}"), status_code=303)
 
         return RedirectResponse(url="/admin/papelera?err=" + quote(f"Error restaurando: {msg[:180]}"), status_code=303)
 
@@ -1316,6 +1454,19 @@ def admin_borrar_definitivo(request: Request, contrato_id: int = Form(...)):
             supabase_service.storage.from_(BUCKET).remove([storage_path])
         except Exception as e:
             return RedirectResponse(url="/admin/papelera?err=" + quote(f"Borrado en DB, pero fallo borrando archivo: {str(e)[:160]}"), status_code=303)
+
+        # ✅ AUDIT LOG: purge
+        sb = supabase_user_client(request)
+        if sb is not None:
+            log_event(
+                sb=sb,
+                empresa_id=empresa_id,
+                action="purge",
+                entity_type="contratos_papelera",
+                entity_id=str(contrato_id),
+                metadata={"storage_path": storage_path},
+                request=request
+            )
 
     return RedirectResponse(url="/admin/papelera?ok=1", status_code=303)
 
@@ -1711,6 +1862,18 @@ def config_post(request: Request, email: str = Form(""), empresa: str = Form("")
         codigo_final = generar_codigo_empresa()
         supabase.table("empresas").update({"codigo": codigo_final}).eq("id", empresa_id).execute()
 
+    sb = supabase_user_client(request)
+    if sb is not None and empresa_id:
+        log_event(
+            sb=sb,
+            empresa_id=empresa_id,
+            action="config_update",
+            entity_type="config",
+            entity_id=user,
+            metadata={"email": email_final, "empresa": empresa_final},
+            request=request
+        )
+
     return templates.TemplateResponse("config.html", {
         "request": request,
         "empresa": empresa_final,
@@ -1777,3 +1940,144 @@ def enviar_alertas(request: Request, dias: int = 30):
         return {"ok": False, "error": f"Fallo enviando email: {str(e)[:180]}", "enviados": []}
 
     return {"ok": True, "enviados": [{"owner": user, "destino": destino, "num_alertas": len(alertas)}]}
+
+
+@app.post("/jobs/enviar_alertas_diarias")
+def job_enviar_alertas_diarias(x_cron_secret: str = Header(None)):
+    if x_cron_secret != os.environ.get("CRON_SECRET"):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service no disponible")
+
+    hoy = datetime.utcnow().date()
+    limite = hoy + timedelta(days=30)
+
+    # 1) Traer empresas
+    empresas = supabase_service.table("empresas").select("id,nombre").execute().data or []
+
+    empresas_notificadas = 0
+
+    for emp in empresas:
+        empresa_id = emp.get("id")
+        if not empresa_id:
+            continue
+
+        # 2) Obtener emails de admins (usuarios_app)
+        admins = (
+            supabase_service.table("usuarios_app")
+            .select("username,email_alertas")
+            .eq("empresa_id", empresa_id)
+            .eq("rol", "admin")
+            .execute()
+            .data
+        ) or []
+
+        destinos = [a.get("email_alertas", "").strip() for a in admins if (a.get("email_alertas") or "").strip()]
+        destinos = list(dict.fromkeys(destinos))  # quitar duplicados
+
+        if not destinos:
+            continue
+
+        # 3) Contratos que vencen en 30 días
+        contratos = (
+            supabase_service.table("contratos")
+            .select("id,archivo_pdf,tipo,fecha_fin,owner,storage_path")
+            .eq("empresa_id", empresa_id)
+            .gte("fecha_fin", hoy.isoformat())
+            .lte("fecha_fin", limite.isoformat())
+            .order("fecha_fin", desc=False)
+            .limit(500)
+            .execute()
+            .data
+        ) or []
+
+        if not contratos:
+            continue
+
+        lineas = []
+        for c in contratos:
+            lineas.append(
+                f"- {c.get('archivo_pdf','')} · {c.get('tipo','otro')} · vence {str(c.get('fecha_fin'))[:10]} · responsable {c.get('owner','')}"
+            )
+
+        asunto = "Contralys · Alertas de vencimiento (≤ 30 días)"
+        cuerpo = "Contratos próximos a vencer:\n\n" + "\n".join(lineas) + "\n\n— Contralys"
+
+        # 4) Enviar email a todos los admins configurados
+        ok_envio = False
+        try:
+            for destino in destinos:
+                enviar_email(destino, asunto, cuerpo)
+            ok_envio = True
+        except Exception as ex:
+            logger.warning("Fallo enviando alertas empresa=%s error=%s", empresa_id, str(ex)[:160])
+
+        if not ok_envio:
+            continue
+
+        # 5) Log automático (sin actor, porque es job)
+        try:
+            supabase_service.table("audit_log").insert({
+                                        "empresa_id": empresa_id,
+                                        "actor_username": "system",
+                                        "actor_auth_id": None,
+                                        "action": "alert_sent",
+                                        "entity_type": "contratos",
+                                        "entity_id": None,
+                                        "metadata": {"dias": 30, "cantidad": len(contratos), "destinos": destinos}
+                              }).execute()
+        except Exception as e:
+            logger.warning("❌ No se pudo insertar alert_sent en audit_log: %s", str(e)[:200])
+
+        empresas_notificadas += 1
+
+    return {"ok": True, "empresas_notificadas": empresas_notificadas, "dias": 30}
+
+@app.get("/debug_job_alertas")
+def debug_job_alertas():
+    if supabase_service is None:
+        return {"ok": False, "error": "no supabase_service"}
+
+    hoy = datetime.utcnow().date()
+    limite = hoy + timedelta(days=30)
+
+    empresas = supabase_service.table("empresas").select("id,nombre").execute().data or []
+    out = {"empresas": len(empresas), "detalle": []}
+
+    for emp in empresas[:20]:
+        empresa_id = emp.get("id")
+
+        admins = (
+            supabase_service.table("usuarios_app")
+            .select("username,rol,email_alertas,empresa_id")
+            .eq("empresa_id", empresa_id)
+            .eq("rol", "admin")
+            .execute()
+            .data
+        ) or []
+
+        destinos = [a.get("email_alertas", "").strip() for a in admins if (a.get("email_alertas") or "").strip()]
+
+        contratos = (
+            supabase_service.table("contratos")
+            .select("id,archivo_pdf,fecha_fin")
+            .eq("empresa_id", empresa_id)
+            .gte("fecha_fin", hoy.isoformat())
+            .lte("fecha_fin", limite.isoformat())
+            .limit(10)
+            .execute()
+            .data
+        ) or []
+
+        out["detalle"].append({
+            "empresa_id": empresa_id,
+            "empresa_nombre": emp.get("nombre"),
+            "admins_encontrados": len(admins),
+            "destinos_no_vacios": len(destinos),
+            "contratos_en_30": len(contratos),
+            "ejemplo_fecha_fin": (contratos[0].get("fecha_fin") if contratos else None)
+        })
+
+    return out
+

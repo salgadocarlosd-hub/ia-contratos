@@ -1,0 +1,15 @@
+name: Alertas Contralys Diarias
+
+on:
+  schedule:
+    - cron: "0 8 * * *"  # 08:00 UTC diario
+  workflow_dispatch:
+
+jobs:
+  run-alerts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llamar endpoint de alertas
+        run: |
+          curl -X POST "${{ secrets.ALERTS_URL }}" \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}"
