@@ -8,8 +8,21 @@ on:
 jobs:
   run-alerts:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Llamar endpoint de alertas
+      - name: Llamar endpoint de alertas y mostrar respuesta
         run: |
-          curl -X POST "${{ secrets.ALERTS_URL }}" \
-            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}"
+          echo "========================================="
+          echo "Iniciando ejecución del cron Contralys"
+          echo "URL: ${{ secrets.ALERTS_URL }}"
+          echo "========================================="
+
+          RESPONSE=$(curl -sS -X POST "${{ secrets.ALERTS_URL }}" \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}")
+
+          echo "Respuesta del servidor:"
+          echo "$RESPONSE"
+
+          echo "========================================="
+          echo "Fin del cron"
+          echo "========================================="
