@@ -1971,8 +1971,23 @@ def job_enviar_alertas_diarias(x_cron_secret: str = Header(None)):
     if supabase_service is None:
         raise HTTPException(status_code=500, detail="Supabase service no disponible")
 
+    # 🔎 LOG SIEMPRE que el cron se ejecuta (DEBUG)
+    try:
+        supabase_service.table("audit_log").insert({
+            "empresa_id": None,
+            "actor_username": "system",
+            "actor_auth_id": None,
+            "action": "job_run",
+            "entity_type": "cron",
+            "entity_id": "enviar_alertas_diarias",
+            "metadata": {"ts": datetime.utcnow().isoformat()}
+        }).execute()
+    except Exception as e:
+        logger.warning("❌ No se pudo insertar job_run en audit_log: %s", str(e)[:200])
+
     hoy = datetime.utcnow().date()
     limite = hoy + timedelta(days=30)
+
 
     empresas = supabase_service.table("empresas").select("id,nombre").execute().data or []
 
