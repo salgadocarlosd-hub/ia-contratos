@@ -3488,6 +3488,17 @@ def jobs_process_outbox_global(
     limite_por_empresa: int = 50,
     x_job_secret: str | None = Header(default=None),
 ):
+    import traceback
+
+    # Helper para devolver errores visibles (y que queden en logs de Render)
+    def _fail(msg: str, exc: Exception | None = None, run_id=None):
+        detail = {"ok": False, "error": msg, "run_id": run_id}
+        if exc is not None:
+            detail["exception"] = str(exc)[:800]
+            detail["trace"] = traceback.format_exc()[:2000]
+        print("OUTBOX_GLOBAL_ERROR:", detail)  # Render logs
+        raise HTTPException(status_code=500, detail=detail)
+
     if supabase_service is None:
         raise HTTPException(status_code=500, detail="supabase_service no configurado")
 
@@ -3507,31 +3518,38 @@ def jobs_process_outbox_global(
         "limite_por_empresa": limite_por_empresa,
     }
 
-    # Crear job_run (tu schema real usa duration_ms, no duration_s)
-    jr = supabase_service.table("job_runs").insert({
-        "job_name": "process_outbox_global",
-        "status": "running",
-        "started_at": t0.isoformat(),
-        "metadata": base_meta,
-    }).execute()
+    # 1) Crear job_run (ojo: tu tabla usa duration_ms y id bigint)
+    try:
+        jr = supabase_service.table("job_runs").insert({
+            "job_name": "process_outbox_global",
+            "status": "running",
+            "started_at": t0.isoformat(),
+            "metadata": base_meta,
+        }).execute()
+        if jr.data and len(jr.data) > 0:
+            run_id = jr.data[0].get("id")
+    except Exception as e:
+        _fail("fallo insert job_runs", e, run_id=None)
 
-    if jr.data and len(jr.data) > 0:
-        run_id = jr.data[0].get("id")
-
+    # 2) Listar empresas pendientes
     try:
         empresas_resp = supabase_service.rpc(
             "list_empresas_con_notificaciones_pendientes",
             {"p_limit": limite_empresas},
         ).execute()
-
         empresas = [r["empresa_id"] for r in (empresas_resp.data or []) if r.get("empresa_id")]
+    except Exception as e:
+        _fail("fallo rpc list_empresas_con_notificaciones_pendientes", e, run_id=run_id)
 
-        total_enviadas = 0
-        total_fallidas = 0
-        total_procesadas = 0
-        por_empresa = []
-        error_msg = None
+    total_enviadas = 0
+    total_fallidas = 0
+    total_procesadas = 0
+    por_empresa = []
+    error_msg = None
+    status = "success"
 
+    # 3) Procesar por empresa
+    try:
         for empresa_id in empresas:
             out = procesar_notificaciones_pendientes(
                 supabase_service,
@@ -3554,40 +3572,40 @@ def jobs_process_outbox_global(
                 "procesadas": procesadas,
             })
 
-        status = "success"
-
     except Exception as e:
         status = "error"
-        empresas = []
-        total_enviadas = 0
-        total_fallidas = 0
-        total_procesadas = 0
-        por_empresa = []
         error_msg = str(e)[:500]
+        # no hacemos _fail aquí: queremos cerrar job_run con status=error
 
-    t1 = datetime.now(timezone.utc)
-    duration_ms = int((t1 - t0).total_seconds() * 1000)
+    # 4) Cerrar job_run
+    try:
+        t1 = datetime.now(timezone.utc)
+        duration_ms = int((t1 - t0).total_seconds() * 1000)
 
-    final_meta = {
-        **base_meta,
-        "empresas_encontradas": len(empresas),
-        "totales": {
-            "enviadas": total_enviadas,
-            "fallidas": total_fallidas,
-            "procesadas": total_procesadas,
-        },
-        "por_empresa": por_empresa[:200],
-        "error": error_msg,
-    }
+        final_meta = {
+            **base_meta,
+            "empresas_encontradas": len(empresas),
+            "totales": {
+                "enviadas": total_enviadas,
+                "fallidas": total_fallidas,
+                "procesadas": total_procesadas,
+            },
+            "por_empresa": por_empresa[:200],
+            "error": error_msg,
+        }
 
-    if run_id:
-        supabase_service.table("job_runs").update({
-            "status": status,
-            "finished_at": t1.isoformat(),
-            "duration_ms": duration_ms,
-            "metadata": final_meta,
-        }).eq("id", run_id).execute()
+        if run_id is not None:
+            supabase_service.table("job_runs").update({
+                "status": status,
+                "finished_at": t1.isoformat(),
+                "duration_ms": duration_ms,
+                "metadata": final_meta,
+            }).eq("id", run_id).execute()
 
+    except Exception as e:
+        _fail("fallo update job_runs (cierre)", e, run_id=run_id)
+
+    # 5) Respuesta final (si status=error, devolvemos ok=false pero sin 500)
     return {
         "ok": status == "success",
         "run_id": run_id,
@@ -3595,6 +3613,8 @@ def jobs_process_outbox_global(
         "enviadas": total_enviadas,
         "fallidas": total_fallidas,
         "procesadas": total_procesadas,
+        "status": status,
+        "error": error_msg,
     }
 
 
