@@ -3481,6 +3481,123 @@ def jobs_process_outbox(
     }
 
 
+@app.get("/jobs/process_outbox_global")
+def jobs_process_outbox_global(
+    request: Request,
+    limite_empresas: int = 50,
+    limite_por_empresa: int = 50,
+    x_job_secret: str | None = Header(default=None),
+):
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="supabase_service no configurado")
+
+    expected = os.getenv("OUTBOX_JOB_SECRET")
+    if not expected:
+        raise HTTPException(status_code=500, detail="OUTBOX_JOB_SECRET no configurado")
+
+    if x_job_secret != expected:
+        raise HTTPException(status_code=401, detail="unauthorized")
+
+    t0 = datetime.now(timezone.utc)
+
+    run_id = None
+    base_meta = {
+        "mode": "global",
+        "limite_empresas": limite_empresas,
+        "limite_por_empresa": limite_por_empresa,
+    }
+
+    # Crear job_run (tu schema real usa duration_ms, no duration_s)
+    jr = supabase_service.table("job_runs").insert({
+        "job_name": "process_outbox_global",
+        "status": "running",
+        "started_at": t0.isoformat(),
+        "metadata": base_meta,
+    }).execute()
+
+    if jr.data and len(jr.data) > 0:
+        run_id = jr.data[0].get("id")
+
+    try:
+        empresas_resp = supabase_service.rpc(
+            "list_empresas_con_notificaciones_pendientes",
+            {"p_limit": limite_empresas},
+        ).execute()
+
+        empresas = [r["empresa_id"] for r in (empresas_resp.data or []) if r.get("empresa_id")]
+
+        total_enviadas = 0
+        total_fallidas = 0
+        total_procesadas = 0
+        por_empresa = []
+        error_msg = None
+
+        for empresa_id in empresas:
+            out = procesar_notificaciones_pendientes(
+                supabase_service,
+                empresa_id,
+                limite=limite_por_empresa
+            )
+
+            enviadas = int(out.get("enviadas", 0))
+            fallidas = int(out.get("fallidas", 0))
+            procesadas = int(out.get("procesadas", 0))
+
+            total_enviadas += enviadas
+            total_fallidas += fallidas
+            total_procesadas += procesadas
+
+            por_empresa.append({
+                "empresa_id": str(empresa_id),
+                "enviadas": enviadas,
+                "fallidas": fallidas,
+                "procesadas": procesadas,
+            })
+
+        status = "success"
+
+    except Exception as e:
+        status = "error"
+        empresas = []
+        total_enviadas = 0
+        total_fallidas = 0
+        total_procesadas = 0
+        por_empresa = []
+        error_msg = str(e)[:500]
+
+    t1 = datetime.now(timezone.utc)
+    duration_ms = int((t1 - t0).total_seconds() * 1000)
+
+    final_meta = {
+        **base_meta,
+        "empresas_encontradas": len(empresas),
+        "totales": {
+            "enviadas": total_enviadas,
+            "fallidas": total_fallidas,
+            "procesadas": total_procesadas,
+        },
+        "por_empresa": por_empresa[:200],
+        "error": error_msg,
+    }
+
+    if run_id:
+        supabase_service.table("job_runs").update({
+            "status": status,
+            "finished_at": t1.isoformat(),
+            "duration_ms": duration_ms,
+            "metadata": final_meta,
+        }).eq("id", run_id).execute()
+
+    return {
+        "ok": status == "success",
+        "run_id": run_id,
+        "empresas": len(empresas),
+        "enviadas": total_enviadas,
+        "fallidas": total_fallidas,
+        "procesadas": total_procesadas,
+    }
+
+
 from pydantic import BaseModel
 from typing import Optional
 
