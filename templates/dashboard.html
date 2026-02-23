@@ -772,19 +772,33 @@
       plugins: {
         legend: { display: false },
         tooltip: {
-          displayColors: false,
-          callbacks: {
-            label: (ctx) => ` ${ctx.parsed.y} contratos`
-          }
-        }
+                        backgroundColor: "#0f172a",
+                        borderColor: "rgba(59,130,246,.40)",
+                        borderWidth: 1,
+                        padding: 10,
+                        titleColor: "#ffffff",
+                        bodyColor: "#e5e7eb",
+                        displayColors: false,
+                        callbacks: {
+                              label: (ctx) => ` ${ctx.parsed.y} contratos`
+                        }
+                   }
       },
       scales: {
         y: {
           beginAtZero: true,
-          ticks: { precision: 0 },
+          ticks: {
+                              stepSize: 1,
+                              color: "rgba(229,231,235,.75)"
+                         }
           grid: { color: 'rgba(255,255,255,.06)' }
         },
         x: {
+          ticks: {
+                              color: "rgba(148,163,184,.85)",
+                              maxRotation: 0,
+                              autoSkip: true
+                         }
           grid: { color: 'rgba(255,255,255,.04)' }
         }
       }	
