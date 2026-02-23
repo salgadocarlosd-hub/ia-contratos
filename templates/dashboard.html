@@ -755,16 +755,20 @@
       labels: labels,
       datasets: [{
         label: 'Contratos',
-        data: values,
-        backgroundColor: 'rgba(59,130,246,0.62)',
-        borderColor: 'rgba(59,130,246,0.95)',
-        borderWidth: 1,
-        borderRadius: 10
+                    data: values,
+                    backgroundColor: 'rgba(59,130,246,0.62)',
+                    borderColor: 'rgba(59,130,246,0.95)',
+                    borderWidth: 1,
+                    borderRadius: 10,
+                    maxBarThickness: 34,
+                   categoryPercentage: 0.70,
+                   barPercentage: 0.85
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      layout: { padding: { top: 6, right: 8, bottom: 6, left: 6 } },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -783,7 +787,7 @@
         x: {
           grid: { color: 'rgba(255,255,255,.04)' }
         }
-      }
+      }	
     }
   });
 })();
