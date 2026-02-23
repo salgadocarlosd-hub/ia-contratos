@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Entidad</title>
+
+  <style>
+    body { font-family: Arial; padding: 24px; }
+
+    .row { display:flex; gap:24px; align-items:flex-start; }
+    .card { border:1px solid #ddd; border-radius:10px; padding:16px; margin-top:16px; }
+
+    .kpi {
+      font-weight:700; padding:6px 12px; border-radius:999px; display:inline-block;
+      padding:6px 14px;
+      border-radius:999px;
+      display:inline-block;
+    }
+
+    .verde { background:#e8f5e9; }
+    .amarillo { background:#fff8e1; }
+    .rojo { background:#ffebee; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #666;
+    }
+
+    details { margin-top: 10px; }
+
+    code {
+      background:#f6f6f6;
+      padding:2px 6px;
+      border-radius:6px;
+    }
+
+    .small { font-size: 12px; color: #666; }
+  </style>
+</head>
+
+<body>
+
+<a href="/vehiculos">← Volver</a>
+
+<h1>{{ entidad.tipo|upper }} — {{ entidad.codigo or entidad.nombre }}</h1>
+
+<p>
+  <strong>Nombre:</strong> {{ entidad.nombre }}
+  |
+  <strong>Activo:</strong> {{ "Sí" if entidad.activo else "No" }}
+</p>
+
+<!-- =================== ESTADO OPERATIVO =================== -->
+
+{% set risk_class = "verde" %}
+{% if riesgo == "BLOQUEADO" %}
+  {% set risk_class = "rojo" %}
+{% elif riesgo == "EN_RIESGO" %}
+  {% set risk_class = "amarillo" %}
+{% endif %}
+
+<div class="card">
+{% set op_class = "verde" %}
+{% if estado_operativo == "BLOQUEADO" %}
+  {% set op_class = "rojo" %}
+{% elif estado_operativo == "EN_RIESGO" %}
+  {% set op_class = "amarillo" %}
+{% endif %}
+
+{% set reg_class = "verde" %}
+{% if estado_regulatorio == "NO_CUMPLE" %}
+  {% set reg_class = "rojo" %}
+{% elif estado_regulatorio == "EN_CONTROL" %}
+  {% set reg_class = "amarillo" %}
+{% endif %}
+
+<div class="card">
+  <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <span class="kpi {{ op_class }}">
+      OPERATIVO: {{ estado_operativo }}
+    </span>
+
+    <span class="kpi {{ reg_class }}">
+      REGULATORIO: {{ estado_regulatorio }}
+    </span>
+
+    <span style="margin-left:12px;">
+      Abiertas: <strong>{{ abiertas|length }}</strong>
+      · Resueltas: <strong>{{ resueltas|length }}</strong>
+    </span>
+  </div>
+</div>
+
+<!-- =================== CONTENIDO =================== -->
+
+<div class="row">
+
+  <!-- =================== COLUMNA IZQUIERDA =================== -->
+
+  <div style="flex: 2;">
+
+    <!-- Obligaciones abiertas -->
+
+    <div class="card">
+      <h2>Obligaciones abiertas</h2>
+
+      {% if abiertas|length == 0 %}
+        <p>No hay obligaciones abiertas.</p>
+      {% else %}
+
+      <table>
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th>Tipo</th>
+            <th>Criticidad</th>
+            <th>Fecha límite</th>
+            <th>SLA</th>
+            <th>Evidencias</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for o in abiertas %}
+          <tr>
+            <td>
+              <strong>{{ o.titulo }}</strong><br>
+              <span class="small">{{ o.estado }}</span>
+            </td>
+
+            <td>{{ o.tipo or "-" }}</td>
+
+            <td>
+              {% set crit = (o.criticidad_snapshot or "media").lower() %}
+              {% if crit == "critica" %}
+                <span class="kpi rojo">CRÍTICA</span>
+              {% elif crit == "alta" %}
+                <span class="kpi amarillo">ALTA</span>
+              {% else %}
+                <span class="kpi verde">MEDIA</span>
+              {% endif %}
+            </td>
+
+            <td>{{ o.fecha_limite }}</td>
+
+            <td>
+              {% if o.incumple_sla %}
+                <span class="kpi rojo">FUERA SLA</span>
+              {% else %}
+                <span class="kpi verde">OK</span>
+              {% endif %}
+              <div class="small">
+                internal_deadline: {{ o.internal_deadline or "-" }}
+              </div>
+            </td>
+
+            <td>
+              {% set evs = evid_por_ob.get(o.id|string, []) %}
+              {% if evs|length == 0 %}
+                -
+              {% else %}
+                <details>
+                  <summary>{{ evs|length }} evidencia(s)</summary>
+                  <ul>
+                    {% for ev in evs %}
+                      <li>
+                        <small>{{ ev.tipo or "evidencia" }} · {{ ev.creado_en }}</small><br>
+                        {{ ev.nombre_archivo or ev.tipo or ev.id }}
+                        {% if ev.contenido %}
+                          <div class="small">{{ ev.contenido }}</div>
+                        {% endif %}
+                      </li>
+                    {% endfor %}
+                  </ul>
+                </details>
+              {% endif %}
+            </td>
+
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {% endif %}
+    </div>
+
+    <!-- Resueltas -->
+
+    <div class="card">
+      <h2>Resueltas</h2>
+
+      {% if resueltas|length == 0 %}
+        <p>No hay resueltas.</p>
+      {% else %}
+        <details>
+          <summary>Ver {{ resueltas|length }} resueltas</summary>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Título</th>
+                <th>Tipo</th>
+                <th>Fecha límite</th>
+                <th>Resuelta</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for o in resueltas %}
+              <tr>
+                <td><strong>{{ o.titulo }}</strong></td>
+                <td>{{ o.tipo or "-" }}</td>
+                <td>{{ o.fecha_limite }}</td>
+                <td>{{ o.resolved_at or "-" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </details>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- =================== COLUMNA DERECHA =================== -->
+
+  <div style="flex: 1;">
+
+    <div class="card">
+      <h2>Metadata</h2>
+      <pre>{{ entidad.metadata | tojson(indent=2) }}</pre>
+    </div>
+
+    <div class="card">
+      <h2>Timeline</h2>
+      {% if eventos|length == 0 %}
+        <p>Sin eventos todavía.</p>
+      {% else %}
+        <ul>
+          {% for ev in eventos %}
+            <li style="margin-bottom:10px;">
+              <small>{{ ev.creado_en }}</small><br>
+              <strong>{{ ev.tipo_evento }}</strong> —
+              {{ ev.actor_username or ev.actor_auth_id }}<br>
+              <span class="small">
+                obligacion_id: <code>{{ ev.obligacion_id }}</code>
+              </span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>

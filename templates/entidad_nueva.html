@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Nueva entidad</title>
+  <style>
+    body { font-family: Arial; padding: 24px; max-width: 640px; }
+    label { display:block; margin-top: 12px; font-weight: 600; }
+    input, select, textarea { width: 100%; padding: 10px; margin-top: 6px; }
+    button { margin-top: 16px; padding: 10px 14px; cursor: pointer; }
+    .hint { font-size: 12px; color: #666; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Crear entidad</h1>
+
+  <form method="post" action="/entidades/nueva">
+    <label>Tipo</label>
+    <select name="tipo">
+      <option value="vehiculo">vehiculo</option>
+      <option value="subcontrata">subcontrata</option>
+      <option value="centro">centro</option>
+      <option value="activo">activo</option>
+      <option value="contrato">contrato</option>
+    </select>
+
+    <label>Nombre</label>
+    <input name="nombre" placeholder="Camión 1234-ABC" required />
+
+    <label>Código (opcional)</label>
+    <input name="codigo" placeholder="1234-ABC / CIF / código interno" />
+
+    <label>Metadata (JSON opcional)</label>
+    <textarea name="metadata" rows="6" placeholder='{"marca":"MAN","modelo":"TGX","anio":2022}'></textarea>
+    <div class="hint">Si no sabes JSON, déjalo vacío.</div>
+
+    <label>Activo</label>
+    <select name="activo">
+      <option value="true" selected>true</option>
+      <option value="false">false</option>
+    </select>
+
+    <button type="submit">Crear</button>
+  </form>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vehículos</title>
+  <style>
+    body{font-family:Arial; padding:24px;}
+    table{width:100%; border-collapse:collapse; margin-top:16px;}
+    th,td{border-bottom:1px solid #ddd; padding:10px; text-align:left;}
+    th{font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:#666;}
+    a{color:#3b82f6; font-weight:700; text-decoration:none;}
+  </style>
+</head>
+<body>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <h1>Vehículos</h1>
+    <a href="/">← Volver al dashboard</a>
+  </div>
+
+  {% if vehiculos and vehiculos|length > 0 %}
+    <table>
+      <thead>
+        <tr>
+          <th>Matrícula</th>
+          <th>Marca</th>
+          <th>Modelo</th>
+          <th>Año</th>
+          <th>Activo</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in vehiculos %}
+        <tr>
+          <td><b><a href="/entidades/{{ v.id }}">{{ v.matricula }}</a></b></td>
+          <td>{{ v.marca or "-" }}</td>
+          <td>{{ v.modelo or "-" }}</td>
+          <td>{{ v.anio or "-" }}</td>
+          <td>{{ "Sí" if v.activo else "No" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No hay vehículos todavía.</p>
+  {% endif %}
+
+</body>
+</html>

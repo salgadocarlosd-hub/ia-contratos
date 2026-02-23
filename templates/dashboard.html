@@ -1,4 +1,4 @@
-<!doctype html> 
+<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8" />
@@ -19,39 +19,24 @@
   --warning:#f59e0b;
   --success:#22c55e;
   --border:#374151;
-  --shadow: 0 10px 30px rgba(0,0,0,.20);
-}
-  /* Scroll profesional en tablas */
-.table-scroll{
-  max-height: 340px; /* aprox 5-6 filas */
-  overflow-y: auto;
-  border-radius: 12px;
-}
 
-/* Scroll más fino y moderno */
-.table-scroll::-webkit-scrollbar{
-  width: 8px;
-}
-.table-scroll::-webkit-scrollbar-thumb{
-  background: rgba(59,130,246,.6);
-  border-radius: 10px;
-}
-.table-scroll::-webkit-scrollbar-track{
-  background: transparent;
-}
+  /* ✅ Vendible: más compacto + más pro */
+  --space: 16px;
+  --radius: 16px;
 
-/* Header fijo dentro del scroll */
-.table-scroll thead th{
-  position: sticky;
-  top: 0;
-  background: rgba(37,44,59,.98);
-  backdrop-filter: blur(6px);
-  z-index: 2;
+  --h1: 20px;
+  --h2: 14px;
+  --text14: 13px;
+  --kpiNum: 24px;
+
+  /* sombras y bordes más “premium” */
+  --shadow: 0 18px 45px rgba(0,0,0,.35);
 }
 
 body{
   margin:0;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial;
+  font-size: var(--text14);
   background:radial-gradient(1200px 600px at 20% 0%, rgba(59,130,246,.10), transparent 60%),
              radial-gradient(1000px 600px at 90% 10%, rgba(34,197,94,.06), transparent 55%),
              var(--bg);
@@ -59,8 +44,8 @@ body{
 }
 
 .container{
-  max-width:1200px;
-  margin:34px auto;
+  max-width:1100px;
+  margin:24px auto;
   padding:0 20px;
 }
 
@@ -69,21 +54,21 @@ body{
   justify-content:space-between;
   align-items:flex-start;
   gap:16px;
-  margin-bottom:20px;
+  margin-bottom:18px;
 }
 
 h1{
   margin:0;
-  font-size:26px;
+  font-size:var(--h1);
   font-weight:800;
   letter-spacing:.2px;
 }
 
 .sub{
   color:var(--muted);
-  font-size:14px;
+  font-size:12px;
   margin-top:6px;
-  line-height:1.3;
+  line-height:1.35;
 }
 
 .top-actions{
@@ -93,20 +78,31 @@ h1{
   flex-wrap:wrap;
 }
 
-.topbar a{
+.top-actions a{
   color:var(--primary);
   text-decoration:none;
-  font-size:14px;
-  font-weight:700;
+  font-size:12px;
+  font-weight:800;
 }
 
 .card{
-  background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.03));
-  border-radius:14px;
-  padding:20px;
-  margin-bottom:18px;
-  border:1px solid rgba(55,65,81,.75);
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,.05),
+    rgba(255,255,255,.02)
+  );
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: var(--space);
+  border: 1px solid rgba(255,255,255,.06);
   box-shadow: var(--shadow);
+  transition: all .25s ease;
+}
+
+/* efecto sutil al pasar el mouse (muy SaaS moderno) */
+.card:hover{
+  transform: translateY(-2px);
+  border-color: rgba(59,130,246,.35);
 }
 
 .card-title{
@@ -119,94 +115,33 @@ h1{
 
 h2{
   margin:0;
-  font-size:16px;
-  font-weight:800;
+  font-size:var(--h2);
+  font-weight:900;
   letter-spacing:.2px;
 }
 
-.kpis{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:14px;
-  margin-top:14px;
-}
-
-.kpi{
-  background:rgba(45,53,71,.75);
-  border:1px solid rgba(55,65,81,.75);
-  border-radius:12px;
-  padding:16px;
-}
-
-.kpi-number{
-  font-size:26px;
-  font-weight:900;
-}
-
-.kpi-label{
+.small{
   font-size:12px;
   color:var(--muted);
-  margin-top:6px;
 }
-
-.grid-2{
-  display:grid;
-  grid-template-columns: 1.2fr .8fr;
-  gap:14px;
-}
-
-@media(max-width:980px){
-  .kpis{grid-template-columns:repeat(2,1fr)}
-  .grid-2{grid-template-columns:1fr}
-}
-
-table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:10px;
-}
-
-th,td{
-  padding:12px 10px;
-  border-bottom:1px solid rgba(55,65,81,.75);
-  text-align:left;
-  font-size:14px;
-}
-
-th{
-  font-size:11px;
-  text-transform:uppercase;
-  letter-spacing:0.10em;
-  color:var(--muted);
-}
-
-.badge{
-  padding:5px 10px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:800;
-  border:1px solid rgba(255,255,255,.08);
-}
-
-.danger{background:rgba(239,68,68,0.16);color:#fecaca;}
-.warn{background:rgba(245,158,11,0.16);color:#fde68a;}
-.ok{background:rgba(34,197,94,0.16);color:#bbf7d0;}
 
 .btn{
   background:var(--primary);
-  color:white;
+  color:white !important;
   padding:8px 12px;
   border-radius:10px;
-  font-size:13px;
+  font-size:12px;
   text-decoration:none;
   border:none;
   cursor:pointer;
-  font-weight:800;
+  font-weight:900;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
 }
 .btn:hover{filter:brightness(1.07)}
-
-.btn-danger{background:var(--danger);}
-.btn-secondary{background:#4b5563;}
+.btn-danger{background:var(--danger)}
+.btn-secondary{background:#4b5563}
 
 input{
   background:rgba(45,53,71,.85);
@@ -218,10 +153,109 @@ input{
   outline:none;
 }
 
+.badge{
+  padding:5px 10px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:900;
+  border:1px solid rgba(255,255,255,.08);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+
+.danger{background:rgba(239,68,68,0.16);color:#fecaca;}
+.warn{background:rgba(245,158,11,0.16);color:#fde68a;}
+.ok{background:rgba(34,197,94,0.16);color:#bbf7d0;}
+
 hr.sep{
   border:none;
   border-top:1px solid rgba(55,65,81,.75);
   margin:14px 0;
+}
+
+/* KPIs: 5 columnas */
+.kpis{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:12px;
+  margin-top:12px;
+}
+@media(max-width:980px){
+  .kpis{grid-template-columns:repeat(2,1fr)}
+}
+
+.kpi{
+  background:rgba(45,53,71,.55);
+  border:1px solid rgba(55,65,81,.75);
+  border-radius:12px;
+  padding:12px;
+  min-height:72px;
+}
+.kpi-number{
+  font-size:var(--kpiNum);
+  font-weight:900;
+}
+.kpi-label{
+  font-size:11px;
+  color:var(--muted);
+  margin-top:6px;
+}
+.kpi-danger{
+  border-color: rgba(239,68,68,.5);
+  background: rgba(239,68,68,.06);
+}
+
+/* Layout 2 columnas */
+.grid-2{
+  display:grid;
+  grid-template-columns: 1.1fr .9fr;
+  gap:14px;
+}
+@media(max-width:980px){
+  .grid-2{grid-template-columns:1fr}
+}
+
+/* tablas */
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
+}
+th,td{
+  padding:10px 10px;
+  border-bottom:1px solid rgba(55,65,81,.65);
+  text-align:left;
+  font-size:12px;
+}
+th{
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:0.10em;
+  color:var(--muted);
+}
+
+/* scroll profesional en tablas */
+.table-scroll{
+  max-height: 340px;
+  overflow-y: auto;
+  border-radius: 12px;
+}
+
+.table-scroll::-webkit-scrollbar{ width: 8px; }
+.table-scroll::-webkit-scrollbar-thumb{
+  background: rgba(59,130,246,.6);
+  border-radius: 10px;
+}
+.table-scroll::-webkit-scrollbar-track{ background: transparent; }
+
+/* header fijo en scroll */
+.table-scroll thead th{
+  position: sticky;
+  top: 0;
+  background: rgba(37,44,59,.98);
+  backdrop-filter: blur(6px);
+  z-index: 2;
 }
 
 /* filtros */
@@ -238,10 +272,10 @@ hr.sep{
   padding:8px 10px;
   border-radius:999px;
   border:1px solid rgba(55,65,81,.85);
-  background:rgba(45,53,71,.6);
+  background:rgba(45,53,71,.55);
   color:var(--text);
-  font-size:13px;
-  font-weight:800;
+  font-size:12px;
+  font-weight:900;
   text-decoration:none;
 }
 .filter-chip:hover{filter:brightness(1.06)}
@@ -249,14 +283,10 @@ hr.sep{
   border-color: rgba(59,130,246,.55);
   background: rgba(59,130,246,.15);
 }
-.small{
-  font-size:12px;
-  color:var(--muted);
-}
 </style>
 </head>
-<body>
 
+<body>
 <div class="container">
 
   <!-- HEADER -->
@@ -266,28 +296,21 @@ hr.sep{
       <div class="sub">Gestión contractual empresarial · Control, vencimientos y trazabilidad</div>
 
       {% if flash_msg %}
-        <div class="sub" style="margin-top:10px;color:#bbf7d0;">
-          ✅ {{ flash_msg }}
-        </div>
+        <div class="sub" style="margin-top:10px;color:#bbf7d0;">✅ {{ flash_msg }}</div>
       {% endif %}
       {% if mensaje %}
-        <div class="sub" style="margin-top:10px;color:#fde68a;">
-          {{ mensaje }}
-        </div>
+        <div class="sub" style="margin-top:10px;color:#fde68a;">{{ mensaje }}</div>
       {% endif %}
     </div>
 
     <div class="top-actions">
       <a class="btn btn-secondary" href="/exportar_excel">Exportar CSV</a>
-
       {% if rol == "admin" %}
         <a href="/admin/papelera">🗑️ Papelera</a>
       {% endif %}
-
       <a href="/config">Configuración</a>
       <a href="/logout">Cerrar sesión</a>
     </div>
-
   </div>
 
   <!-- KPIs -->
@@ -314,10 +337,16 @@ hr.sep{
         <div class="kpi-number">{{ stats.sin_fecha }}</div>
         <div class="kpi-label">Sin fecha</div>
       </div>
+
+      <!-- KPI extra (si lo envías desde backend); si no existe, muestra 0 -->
+      <div class="kpi kpi-danger">
+        <div class="kpi-number">{{ stats.fuera_sla if stats.fuera_sla is defined else 0 }}</div>
+        <div class="kpi-label">Fuera de SLA interno</div>
+      </div>
     </div>
   </div>
 
-  <!-- NUEVO: Subida de PDF (ancho completo, debajo KPIs) -->
+  <!-- Subir PDF -->
   <div class="card">
     <div class="card-title">
       <h2>Subir contrato (PDF)</h2>
@@ -332,26 +361,31 @@ hr.sep{
     </form>
   </div>
 
-         <!-- Actividad reciente -->
-        <div class="card">
-          <div class="card-title">
-            <h2>Actividad reciente</h2>
-            <span class="small">Últimos movimientos en la cuenta</span>
+  <!-- Actividad reciente (CUADRO NORMAL + SCROLL) -->
+  <div class="card" id="actividad">
+    <div class="card-title">
+                <h2>Actividad reciente</h2>
+                <div>
+                    <span class="small">Últimos movimientos en la cuenta</span>
+                    <a href="/actividad" class="small" style="margin-left:12px;color:var(--primary);font-weight:700;">
+                         Ver todo →
+                    </a>
+               </div>
           </div>
 
-          {% if actividad and actividad|length > 0 %}
-          <table>
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Usuario</th>
-                <th>Acción</th>
-                <th>Detalle</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {% for a in actividad %}
+    {% if actividad and actividad|length > 0 %}
+      <div class="table-scroll" style="max-height:260px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Usuario</th>
+              <th>Acción</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in actividad %}
               <tr>
                 <td>{{ (a.created_at|string)[:19].replace('T',' ') }}</td>
                 <td><b>{{ a.actor_username }}</b></td>
@@ -364,22 +398,22 @@ hr.sep{
                     <span class="badge ok">Restauró</span>
                   {% elif a.action == "purge" %}
                     <span class="badge danger">Borrado definitivo</span>
-                   {% elif a.action == "config_update" %}
-                     <span class="badge warn">Configuración</span>
+                  {% elif a.action == "config_update" %}
+                    <span class="badge warn">Configuración</span>
                   {% else %}
                     <span class="badge">{{ a.action }}</span>
                   {% endif %}
                 </td>
                 <td>{{ a.entity_type }} {{ a.entity_id or "" }}</td>
-               </tr>
-               {% endfor %}
-            </tbody>
-           </table>
-           {% else %}
-             <div class="sub">Aún no hay actividad registrada.</div>
-          {% endif %}
-        </div>
-
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="sub">Aún no hay actividad registrada.</div>
+    {% endif %}
+  </div>
 
   <!-- 2 columnas: Riesgo + Gráfico -->
   <div class="grid-2">
@@ -392,7 +426,6 @@ hr.sep{
       </div>
 
       {% if vencen_7 and vencen_7|length > 0 %}
-
         <table>
           <thead>
             <tr>
@@ -411,7 +444,6 @@ hr.sep{
             {% endfor %}
           </tbody>
         </table>
-
       {% else %}
         <div class="sub">Sin vencimientos críticos.</div>
       {% endif %}
@@ -453,15 +485,18 @@ hr.sep{
         <h2>Vencimientos por mes</h2>
         <span class="small">Distribución de fin de contrato</span>
       </div>
-      <canvas id="vencimientosChart" height="160"></canvas>
 
-      <div class="small" style="margin-top:10px;">
-        Útil para ver acumulaciones de renovaciones en ciertos meses.
-      </div>
+      <canvas id="vencimientosChart" height="170"></canvas>
+
+      {% if not grafico_labels or grafico_labels|length == 0 %}
+        <div class="sub" style="margin-top:10px;">Aún no hay datos suficientes para el gráfico.</div>
+      {% else %}
+        <div class="small" style="margin-top:10px;">Útil para ver acumulaciones de renovaciones en ciertos meses.</div>
+      {% endif %}
     </div>
   </div>
 
-  <!-- Buscador / Preguntas -->
+  <!-- Buscador -->
   <div class="card">
     <div class="card-title">
       <h2>Buscar contratos</h2>
@@ -469,21 +504,20 @@ hr.sep{
     </div>
     <div class="sub">Ejemplos: “vencen en 15 días”, “laborales”, “sin fecha”.</div>
     <form action="/preguntar_contratos/" method="post" style="margin-top:12px; display:flex; gap:10px; align-items:center;">
-      <input name="pregunta" placeholder="¿Qué contratos vencen pronto?">
+      <input name="pregunta" placeholder="Ej: vencen en 15 días">
       <button class="btn" type="submit">Preguntar</button>
     </form>
   </div>
 
-  <!-- Gestión documental + Filtros -->
+  <!-- Gestión documental -->
   <div class="card">
     <div class="card-title">
       <h2>Gestión documental</h2>
       <span class="small">Tabla completa</span>
     </div>
 
-    <!-- Filtros por tipo -->
     <div class="filters">
-      <a class="filter-chip {% if not tipo_actual %}active{% endif %}" href="/">Todos</a>
+      <a class="filter-chip active" href="#actividad">Todos</a>
       <a class="filter-chip {% if tipo_actual=='laboral' %}active{% endif %}" href="/?tipo=laboral">Laboral</a>
       <a class="filter-chip {% if tipo_actual=='alquiler' %}active{% endif %}" href="/?tipo=alquiler">Alquiler</a>
       <a class="filter-chip {% if tipo_actual=='servicios' %}active{% endif %}" href="/?tipo=servicios">Servicios</a>
@@ -491,103 +525,114 @@ hr.sep{
       <a class="filter-chip {% if tipo_actual=='otro' %}active{% endif %}" href="/?tipo=otro">Otro</a>
     </div>
 
-      <div class="table-scroll">
-    <table>
-      <thead>
-        <tr>
-          <th>Documento</th>
-          <th>Tipo</th>
-          <th>Vence</th>
-          <th>Responsable</th>
-          <th>Estado</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for c in todos %}
-        <tr>
-          <td><b>{{ c.archivo_pdf }}</b></td>
-          <td>{{ c.tipo }}</td>
-          <td>{{ c.fecha_fin or "—" }}</td>
-          <td>{{ c.owner }}</td>
-          <td>
-            {% if c.fecha_fin %}
-              {% if c.fecha_fin < hoy %}
-                <span class="badge danger">Vencido</span>
-              {% else %}
-                <span class="badge ok">Activo</span>
-              {% endif %}
-            {% else %}
-              <span class="badge warn">Sin fecha</span>
-            {% endif %}
-          </td>
-          <td>
-            <a class="btn" href="/descargar/?path={{ c.storage_path }}">Descargar</a>
-            {% if rol == "admin" %}
-            <form method="post" action="/admin/borrar_contrato" style="display:inline;">
-              <input type="hidden" name="contrato_id" value="{{ c.id }}">
-              <button class="btn btn-danger" type="submit" onclick="return confirm('¿Eliminar? Se moverá a papelera si la tienes activa.')">Eliminar</button>
-            </form>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-     </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Documento</th>
+            <th>Tipo</th>
+            <th>Vence</th>
+            <th>Responsable</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for c in todos %}
+            <tr>
+              <td><b>{{ c.archivo_pdf }}</b></td>
+              <td>{{ c.tipo }}</td>
+              <td>{{ c.fecha_fin or "—" }}</td>
+              <td>{{ c.owner }}</td>
+
+              <!-- FIX: no comparar None con string -->
+              <td>
+                {% if not c.fecha_fin %}
+                  <span class="badge warn">Sin fecha</span>
+                {% else %}
+                  {% if c.fecha_fin < hoy %}
+                    <span class="badge danger">Vencido</span>
+                  {% else %}
+                    <span class="badge ok">Activo</span>
+                  {% endif %}
+                {% endif %}
+              </td>
+
+              <td>
+                <a class="btn" href="/descargar/?path={{ c.storage_path }}">Descargar</a>
+                {% if rol == "admin" %}
+                  <form method="post" action="/admin/borrar_contrato" style="display:inline;">
+                    <input type="hidden" name="contrato_id" value="{{ c.id }}">
+                    <button class="btn btn-danger" type="submit" onclick="return confirm('¿Eliminar? Se moverá a papelera.')">Eliminar</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
 
     {% if todos|length == 0 %}
       <div class="sub" style="margin-top:10px;">No hay contratos para este filtro.</div>
     {% endif %}
   </div>
 
-  <!-- Equipo (admin) -->
+  <!-- Equipo -->
   {% if rol == "admin" %}
-  <div class="card">
-    <div class="card-title">
-      <h2>Equipo</h2>
-      <span class="small">Usuarios de tu empresa</span>
-    </div>
+    <div class="card">
+      <div class="card-title">
+        <h2>Equipo</h2>
+        <span class="small">Usuarios de tu empresa</span>
+      </div>
 
-    {% if miembros and miembros|length > 0 %}
-    <table>
-      <thead>
-        <tr>
-          <th>Usuario</th>
-          <th>Rol</th>
-          <th>Email alertas</th>
-          <th>Creado</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for m in miembros %}
-        <tr>
-          <td><b>{{ m.username }}</b></td>
-          <td>{{ m.rol }}</td>
-          <td>{{ m.email_alertas or "—" }}</td>
-          <td>{{ (m.creado_en|string)[:10] }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-      <div class="sub">No hay miembros registrados.</div>
-    {% endif %}
-  </div>
+      {% if miembros and miembros|length > 0 %}
+        <table>
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th>Email alertas</th>
+              <th>Creado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in miembros %}
+              <tr>
+                <td><b>{{ m.username }}</b></td>
+                <td>{{ m.rol }}</td>
+                <td>{{ m.email_alertas or "—" }}</td>
+                <td>{{ (m.creado_en|string)[:10] }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="sub">No hay miembros registrados.</div>
+      {% endif %}
+    </div>
   {% endif %}
 
 </div>
 
 <script>
-const ctx = document.getElementById('vencimientosChart');
-if(ctx){
+(function(){
+  const ctx = document.getElementById('vencimientosChart');
+  if(!ctx) return;
+
+  const labels = {{ grafico_labels|tojson }};
+  const values = {{ grafico_values|tojson }};
+
+  if(!labels || labels.length === 0) return;
+
   new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: {{ grafico_labels|tojson }},
+      labels: labels,
       datasets: [{
         label: 'Contratos',
-        data: {{ grafico_values|tojson }},
+        data: values,
         backgroundColor: 'rgba(59,130,246,0.65)',
         borderColor: 'rgba(59,130,246,1)',
         borderWidth: 1,
@@ -602,7 +647,7 @@ if(ctx){
       }
     }
   });
-}
+})();
 </script>
 
 </body>
