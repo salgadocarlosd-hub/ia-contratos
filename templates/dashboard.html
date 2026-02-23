@@ -1,289 +1,397 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Panel empresarial</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Panel empresarial</title>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<style>
-:root{
-  --bg:#1e2430;
-  --card:#252c3b;
-  --card-light:#2d3547;
-  --text:#e5e7eb;
-  --muted:#9ca3af;
-  --primary:#3b82f6;
-  --danger:#ef4444;
-  --warning:#f59e0b;
-  --success:#22c55e;
-  --border:#374151;
+  <style>
+    :root{
+      --bg:#0f172a;              /* slate-900 */
+      --panel:#111c33;           /* custom */
+      --card:rgba(255,255,255,.06);
+      --card2:rgba(255,255,255,.04);
+      --text:#e5e7eb;
+      --muted:#94a3b8;           /* slate-400 */
+      --border:rgba(148,163,184,.22);
+      --border2:rgba(148,163,184,.14);
 
-  /* ✅ Vendible: más compacto + más pro */
-  --space: 16px;
-  --radius: 16px;
+      --primary:#3b82f6;
+      --danger:#ef4444;
+      --warning:#f59e0b;
+      --success:#22c55e;
 
-  --h1: 20px;
-  --h2: 14px;
-  --text14: 13px;
-  --kpiNum: 24px;
+      --radius:16px;
+      --radius2:12px;
+      --space:16px;
 
-  /* sombras y bordes más “premium” */
-  --shadow: 0 18px 45px rgba(0,0,0,.35);
-}
+      --shadow: 0 12px 28px rgba(0,0,0,.30);
+      --shadow2: 0 10px 22px rgba(0,0,0,.22);
 
-body{
-  margin:0;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial;
-  font-size: var(--text14);
-  background:radial-gradient(1200px 600px at 20% 0%, rgba(59,130,246,.10), transparent 60%),
-             radial-gradient(1000px 600px at 90% 10%, rgba(34,197,94,.06), transparent 55%),
-             var(--bg);
-  color:var(--text);
-}
+      --h1: 20px;
+      --h2: 13px;
+      --text14: 13px;
+      --kpiNum: 24px;
 
-.container{
-  max-width:1100px;
-  margin:24px auto;
-  padding:0 20px;
-}
+      --focus: 0 0 0 3px rgba(59,130,246,.35);
+    }
 
-.topbar{
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
-  gap:16px;
-  margin-bottom:18px;
-}
+    * { box-sizing: border-box; }
 
-h1{
-  margin:0;
-  font-size:var(--h1);
-  font-weight:800;
-  letter-spacing:.2px;
-}
+    body{
+      margin:0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial;
+      font-size: var(--text14);
+      color: var(--text);
+      background:
+        radial-gradient(1200px 600px at 12% -10%, rgba(59,130,246,.16), transparent 62%),
+        radial-gradient(900px 520px at 92% 0%, rgba(34,197,94,.10), transparent 58%),
+        radial-gradient(900px 520px at 50% 110%, rgba(245,158,11,.08), transparent 60%),
+        var(--bg);
+    }
 
-.sub{
-  color:var(--muted);
-  font-size:12px;
-  margin-top:6px;
-  line-height:1.35;
-}
+    a { color: inherit; }
 
-.top-actions{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  flex-wrap:wrap;
-}
+    .container{
+      max-width: 1120px;
+      margin: 22px auto 48px;
+      padding: 0 20px;
+    }
 
-.top-actions a{
-  color:var(--primary);
-  text-decoration:none;
-  font-size:12px;
-  font-weight:800;
-}
+    /* HEADER */
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:16px;
+      margin-bottom: 14px;
+    }
 
-.card{
-  background: linear-gradient(
-    180deg,
-    rgba(255,255,255,.05),
-    rgba(255,255,255,.02)
-  );
-  border-radius: var(--radius);
-  padding: 18px;
-  margin-bottom: var(--space);
-  border: 1px solid rgba(255,255,255,.06);
-  box-shadow: var(--shadow);
-  transition: all .25s ease;
-}
+    .brand{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
 
-/* efecto sutil al pasar el mouse (muy SaaS moderno) */
-.card:hover{
-  transform: translateY(-2px);
-  border-color: rgba(59,130,246,.35);
-}
+    h1{
+      margin:0;
+      font-size: var(--h1);
+      font-weight: 900;
+      letter-spacing:.2px;
+      display:flex;
+      align-items:baseline;
+      gap:10px;
+      flex-wrap:wrap;
+    }
 
-.card-title{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-  margin-bottom:10px;
-}
+     <!-- DASHBOARD_VERSION: 2026-02-23 chart-wrap -->
 
-h2{
-  margin:0;
-  font-size:var(--h2);
-  font-weight:900;
-  letter-spacing:.2px;
-}
+    .role-pill{
+      font-size: 11px;
+      font-weight: 900;
+      color: rgba(255,255,255,.90);
+      background: rgba(59,130,246,.16);
+      border: 1px solid rgba(59,130,246,.35);
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
 
-.small{
-  font-size:12px;
-  color:var(--muted);
-}
+    .sub{
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      max-width: 720px;
+    }
 
-.btn{
-  background:var(--primary);
-  color:white !important;
-  padding:8px 12px;
-  border-radius:10px;
-  font-size:12px;
-  text-decoration:none;
-  border:none;
-  cursor:pointer;
-  font-weight:900;
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-}
-.btn:hover{filter:brightness(1.07)}
-.btn-danger{background:var(--danger)}
-.btn-secondary{background:#4b5563}
+    .flash{
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(17, 28, 51, .72);
+      box-shadow: var(--shadow2);
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+    }
+    .flash.ok{ border-color: rgba(34,197,94,.35); }
+    .flash.warn{ border-color: rgba(245,158,11,.35); }
 
-input{
-  background:rgba(45,53,71,.85);
-  border:1px solid rgba(55,65,81,.75);
-  color:white;
-  padding:10px 12px;
-  border-radius:10px;
-  width:100%;
-  outline:none;
-}
+    .top-actions{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
 
-.badge{
-  padding:5px 10px;
-  border-radius:999px;
-  font-size:11px;
-  font-weight:900;
-  border:1px solid rgba(255,255,255,.08);
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-}
+    /* BUTTONS */
+    .btn{
+      background: var(--primary);
+      color: white !important;
+      padding: 9px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,.10);
+      cursor: pointer;
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--shadow2);
+      transition: transform .18s ease, filter .18s ease, border-color .18s ease;
+      line-height: 1;
+      height: 34px;
+      white-space: nowrap;
+    }
+    .btn:hover{ filter: brightness(1.06); transform: translateY(-1px); }
+    .btn:focus{ outline: none; box-shadow: var(--shadow2), var(--focus); }
 
-.danger{background:rgba(239,68,68,0.16);color:#fecaca;}
-.warn{background:rgba(245,158,11,0.16);color:#fde68a;}
-.ok{background:rgba(34,197,94,0.16);color:#bbf7d0;}
+    .btn-secondary{
+      background: rgba(148,163,184,.14);
+      border-color: rgba(148,163,184,.22);
+      color: rgba(255,255,255,.92) !important;
+    }
+    .btn-secondary:hover{ border-color: rgba(59,130,246,.35); }
+    .btn-danger{ background: rgba(239,68,68,.92); }
 
-hr.sep{
-  border:none;
-  border-top:1px solid rgba(55,65,81,.75);
-  margin:14px 0;
-}
+    .link{
+      color: rgba(255,255,255,.88);
+      text-decoration:none;
+      font-size: 12px;
+      font-weight: 900;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      transition: background .18s ease, border-color .18s ease;
+      height: 34px;
+      display:inline-flex;
+      align-items:center;
+    }
+    .link:hover{
+      background: rgba(255,255,255,.06);
+      border-color: var(--border2);
+    }
+    .link:focus{ outline:none; box-shadow: var(--focus); }
 
-/* KPIs: 5 columnas */
-.kpis{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:12px;
-  margin-top:12px;
-}
-@media(max-width:980px){
-  .kpis{grid-template-columns:repeat(2,1fr)}
-}
+    /* CARDS */
+    .card{
+      background: linear-gradient(180deg, var(--card), var(--card2));
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: var(--space);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      transition: transform .22s ease, border-color .22s ease;
+    }
+    .card:hover{
+      transform: translateY(-1px);
+      border-color: rgba(59,130,246,.28);
+    }
 
-.kpi{
-  background:rgba(45,53,71,.55);
-  border:1px solid rgba(55,65,81,.75);
-  border-radius:12px;
-  padding:12px;
-  min-height:72px;
-}
-.kpi-number{
-  font-size:var(--kpiNum);
-  font-weight:900;
-}
-.kpi-label{
-  font-size:11px;
-  color:var(--muted);
-  margin-top:6px;
-}
-.kpi-danger{
-  border-color: rgba(239,68,68,.5);
-  background: rgba(239,68,68,.06);
-}
+    .card-title{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom: 10px;
+      flex-wrap:wrap;
+    }
 
-/* Layout 2 columnas */
-.grid-2{
-  display:grid;
-  grid-template-columns: 1.1fr .9fr;
-  gap:14px;
-}
-@media(max-width:980px){
-  .grid-2{grid-template-columns:1fr}
-}
+    h2{
+      margin:0;
+      font-size: var(--h2);
+      font-weight: 950;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.88);
+    }
 
-/* tablas */
-table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:10px;
-}
-th,td{
-  padding:10px 10px;
-  border-bottom:1px solid rgba(55,65,81,.65);
-  text-align:left;
-  font-size:12px;
-}
-th{
-  font-size:10px;
-  text-transform:uppercase;
-  letter-spacing:0.10em;
-  color:var(--muted);
-}
+    .small{
+      font-size: 12px;
+      color: var(--muted);
+    }
 
-/* scroll profesional en tablas */
-.table-scroll{
-  max-height: 340px;
-  overflow-y: auto;
-  border-radius: 12px;
-}
+    hr.sep{
+      border:none;
+      border-top:1px solid var(--border2);
+      margin: 14px 0;
+    }
 
-.table-scroll::-webkit-scrollbar{ width: 8px; }
-.table-scroll::-webkit-scrollbar-thumb{
-  background: rgba(59,130,246,.6);
-  border-radius: 10px;
-}
-.table-scroll::-webkit-scrollbar-track{ background: transparent; }
 
-/* header fijo en scroll */
-.table-scroll thead th{
-  position: sticky;
-  top: 0;
-  background: rgba(37,44,59,.98);
-  backdrop-filter: blur(6px);
-  z-index: 2;
-}
+    .chart-wrap{
+      height: 260px;
+      width: 100%;
+      position: relative;
+    }
 
-/* filtros */
-.filters{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-top:10px;
-}
-.filter-chip{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:8px 10px;
-  border-radius:999px;
-  border:1px solid rgba(55,65,81,.85);
-  background:rgba(45,53,71,.55);
-  color:var(--text);
-  font-size:12px;
-  font-weight:900;
-  text-decoration:none;
-}
-.filter-chip:hover{filter:brightness(1.06)}
-.filter-chip.active{
-  border-color: rgba(59,130,246,.55);
-  background: rgba(59,130,246,.15);
-}
-</style>
+    .chart-wrap canvas{
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+
+    /* INPUT */
+    input[type="file"],
+    input[type="text"],
+    input:not([type]){
+      background: rgba(17, 28, 51, .65);
+      border: 1px solid var(--border);
+      color: white;
+      padding: 10px 12px;
+      border-radius: 12px;
+      width: 100%;
+      outline: none;
+      height: 38px;
+    }
+    input:focus{ box-shadow: var(--focus); border-color: rgba(59,130,246,.45); }
+
+    /* BADGES */
+    .badge{
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 950;
+      border: 1px solid var(--border2);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: .02em;
+      white-space: nowrap;
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.88);
+    }
+    .danger{ background: rgba(239,68,68,.14); color:#fecaca; border-color: rgba(239,68,68,.28); }
+    .warn{ background: rgba(245,158,11,.14); color:#fde68a; border-color: rgba(245,158,11,.28); }
+    .ok{ background: rgba(34,197,94,.14); color:#bbf7d0; border-color: rgba(34,197,94,.28); }
+
+    /* KPIs */
+    .kpis{
+      display:grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+    @media(max-width:980px){
+      .kpis{ grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .kpi{
+      background: rgba(17, 28, 51, .55);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius2);
+      padding: 12px;
+      min-height: 78px;
+    }
+    .kpi-number{
+      font-size: var(--kpiNum);
+      font-weight: 950;
+      letter-spacing: .2px;
+    }
+    .kpi-label{
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    .kpi-danger{
+      border: 1px solid rgba(239,68,68,.55);
+      background: rgba(239,68,68,.08);
+    }
+
+    /* LAYOUT */
+    .grid-2{
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 14px;
+    }
+    @media(max-width:980px){
+      .grid-2{ grid-template-columns: 1fr; }
+    }
+
+    /* TABLES */
+    .table-scroll{
+      max-height: 340px;
+      overflow-y: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border2);
+      background: rgba(17, 28, 51, .35);
+    }
+
+    table{
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0;
+    }
+    th, td{
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(148,163,184,.12);
+      text-align: left;
+      font-size: 12px;
+      vertical-align: top;
+    }
+    th{
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.10em;
+      color: var(--muted);
+      position: sticky;
+      top: 0;
+      background: rgba(15, 23, 42, .92);
+      backdrop-filter: blur(8px);
+      z-index: 2;
+    }
+
+    tbody tr:nth-child(odd) td{ background: rgba(255,255,255,.02); }
+    tbody tr:hover td{ background: rgba(59,130,246,.06); }
+
+    .table-scroll::-webkit-scrollbar{ width: 8px; }
+    .table-scroll::-webkit-scrollbar-thumb{
+      background: rgba(59,130,246,.55);
+      border-radius: 10px;
+    }
+    .table-scroll::-webkit-scrollbar-track{ background: transparent; }
+
+    /* FILTERS */
+    .filters{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+    .filter-chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--border2);
+      background:rgba(17,28,51,.45);
+      color: rgba(255,255,255,.90);
+      font-size:12px;
+      font-weight:900;
+      text-decoration:none;
+      transition: filter .18s ease, border-color .18s ease, background .18s ease;
+    }
+    .filter-chip:hover{ filter:brightness(1.06); border-color: rgba(59,130,246,.35); }
+    .filter-chip.active{
+      border-color: rgba(59,130,246,.55);
+      background: rgba(59,130,246,.14);
+    }
+
+    /* EMPTY STATE */
+    .empty{
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px dashed rgba(148,163,184,.22);
+      background: rgba(17,28,51,.35);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+  </style>
 </head>
 
 <body>
@@ -291,32 +399,42 @@ th{
 
   <!-- HEADER -->
   <div class="topbar">
-    <div>
-      <h1>{{ user }} — {{ rol|capitalize }}</h1>
+    <div class="brand">
+      <h1>
+        {{ user }}
+        <span class="role-pill">{{ rol|capitalize }}</span>
+      </h1>
       <div class="sub">Gestión contractual empresarial · Control, vencimientos y trazabilidad</div>
 
       {% if flash_msg %}
-        <div class="sub" style="margin-top:10px;color:#bbf7d0;">✅ {{ flash_msg }}</div>
+        <div class="flash ok">
+          <div>✅</div>
+          <div class="sub" style="margin:0;color:#bbf7d0;">{{ flash_msg }}</div>
+        </div>
       {% endif %}
+
       {% if mensaje %}
-        <div class="sub" style="margin-top:10px;color:#fde68a;">{{ mensaje }}</div>
+        <div class="flash warn">
+          <div>ℹ️</div>
+          <div class="sub" style="margin:0;color:#fde68a;">{{ mensaje }}</div>
+        </div>
       {% endif %}
     </div>
 
     <div class="top-actions">
       <a class="btn btn-secondary" href="/exportar_excel">Exportar CSV</a>
       {% if rol == "admin" %}
-        <a href="/admin/papelera">🗑️ Papelera</a>
+        <a class="link" href="/admin/papelera">🗑️ Papelera</a>
       {% endif %}
-      <a href="/config">Configuración</a>
-      <a href="/logout">Cerrar sesión</a>
+      <a class="link" href="/config">Configuración</a>
+      <a class="link" href="/logout">Cerrar sesión</a>
     </div>
   </div>
 
   <!-- KPIs -->
   <div class="card">
     <div class="card-title">
-      <h2>Indicadores clave</h2>
+      <h2>RESUMEN OPERATIVO</h2>
       <div class="small">Actualizado: {{ hoy }}</div>
     </div>
 
@@ -337,8 +455,6 @@ th{
         <div class="kpi-number">{{ stats.sin_fecha }}</div>
         <div class="kpi-label">Sin fecha</div>
       </div>
-
-      <!-- KPI extra (si lo envías desde backend); si no existe, muestra 0 -->
       <div class="kpi kpi-danger">
         <div class="kpi-number">{{ stats.fuera_sla if stats.fuera_sla is defined else 0 }}</div>
         <div class="kpi-label">Fuera de SLA interno</div>
@@ -349,29 +465,27 @@ th{
   <!-- Subir PDF -->
   <div class="card">
     <div class="card-title">
-      <h2>Subir contrato (PDF)</h2>
-      <span class="small">Detectamos fecha de fin y tipo automáticamente</span>
+      <h2>Subir contrato</h2>
+      <span class="small">Detecta fecha y tipo automáticamente</span>
     </div>
 
     <form action="/subir_pdf/" method="post" enctype="multipart/form-data"
           style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-      <input type="file" name="file" accept="application/pdf" required style="max-width:340px;">
+      <input type="file" name="file" accept="application/pdf" required style="max-width:360px;">
       <button class="btn" type="submit">Subir PDF</button>
       <span class="small">Máx. 20MB · Se guardará en tu empresa</span>
     </form>
   </div>
 
-  <!-- Actividad reciente (CUADRO NORMAL + SCROLL) -->
+  <!-- Actividad reciente -->
   <div class="card" id="actividad">
     <div class="card-title">
-                <h2>Actividad reciente</h2>
-                <div>
-                    <span class="small">Últimos movimientos en la cuenta</span>
-                    <a href="/actividad" class="small" style="margin-left:12px;color:var(--primary);font-weight:700;">
-                         Ver todo →
-                    </a>
-               </div>
-          </div>
+      <h2>Actividad</h2>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <span class="small">Últimos movimientos</span>
+        <a class="link" href="/actividad">Ver todo →</a>
+      </div>
+    </div>
 
     {% if actividad and actividad|length > 0 %}
       <div class="table-scroll" style="max-height:260px;">
@@ -411,71 +525,78 @@ th{
         </table>
       </div>
     {% else %}
-      <div class="sub">Aún no hay actividad registrada.</div>
+      <div class="empty">Aún no hay actividad registrada.</div>
     {% endif %}
   </div>
 
   <!-- 2 columnas: Riesgo + Gráfico -->
   <div class="grid-2">
 
-    <!-- Riesgo inmediato -->
+    <!-- EXPOSICIÓN CRÍTICA (≤ 7 DÍAS) -->
     <div class="card">
       <div class="card-title">
-        <h2>Riesgo inmediato (≤ 7 días)</h2>
-        <span class="badge warn">Prioridad</span>
+        <h2>EXPOSICIÓN CRÍTICA (≤ 7 DÍAS)</h2>
+        <span class="badge warn">≤ 7 días</span>
       </div>
 
       {% if vencen_7 and vencen_7|length > 0 %}
-        <table>
-          <thead>
-            <tr>
-              <th>Documento</th><th>Tipo</th><th>Vence</th><th>Días</th><th>Responsable</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for c in vencen_7 %}
+        <div class="table-scroll" style="max-height: 260px;">
+          <table>
+            <thead>
               <tr>
-                <td><b>{{ c.archivo_pdf }}</b></td>
-                <td>{{ c.tipo }}</td>
-                <td>{{ c.fecha_fin }}</td>
-                <td>{{ c.dias }}</td>
-                <td>{{ c.owner }}</td>
+                <th>Documento</th><th>Tipo</th><th>Vence</th><th>Días</th><th>Responsable</th>
               </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {% for c in vencen_7 %}
+                <tr>
+                  <td><b>{{ c.archivo_pdf }}</b></td>
+                  <td>{{ c.tipo }}</td>
+                  <td>{{ c.fecha_fin }}</td>
+                  <td>{{ c.dias }}</td>
+                  <td>{{ c.owner }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       {% else %}
-        <div class="sub">Sin vencimientos críticos.</div>
+        <div class="empty">Sin vencimientos críticos.</div>
       {% endif %}
 
       <hr class="sep">
 
       <div class="card-title" style="margin-bottom:0;">
-        <h2>Vencen ≤ 30 días</h2>
-        <span class="badge ok">Seguimiento</span>
+        <h2>VENCIMIENTOS PRÓXIMOS (≤ 30 DÍAS)</h2>
+        <span class="badge ok">≤ 30 días</span>
       </div>
 
       {% if vencen_30 and vencen_30|length > 0 %}
-        <table>
-          <thead>
-            <tr>
-              <th>Documento</th><th>Vence</th><th>Días</th><th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for c in vencen_30[:8] %}
+        <div class="table-scroll" style="max-height: 320px; margin-top: 10px;">
+          <table>
+            <thead>
               <tr>
-                <td><b>{{ c.archivo_pdf }}</b><div class="small">{{ c.tipo }} · {{ c.owner }}</div></td>
-                <td>{{ c.fecha_fin }}</td>
-                <td>{{ c.dias }}</td>
-                <td><a class="btn btn-secondary" href="/descargar/?path={{ c.storage_path }}">Ver</a></td>
+                <th>Documento</th><th>Vence</th><th>Días</th><th></th>
               </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        <div class="small" style="margin-top:8px;">Mostrando 8 primeros. La tabla completa está en “Gestión documental”.</div>
+            </thead>
+            <tbody>
+              {% for c in vencen_30[:10] %}
+                <tr>
+                  <td>
+                    <b>{{ c.archivo_pdf }}</b>
+                    <div class="small">{{ c.tipo }} · {{ c.owner }}</div>
+                  </td>
+                  <td>{{ c.fecha_fin }}</td>
+                  <td>{{ c.dias }}</td>
+                  <td><a class="btn btn-secondary" href="/descargar/?path={{ c.storage_path }}">Ver</a></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="small" style="margin-top:8px;">Mostrando 10 primeros. La tabla completa está abajo en “REPOSITORIO CONTRACTUAL”.</div>
       {% else %}
-        <div class="sub">No hay contratos que venzan en los próximos 30 días.</div>
+        <div class="empty">No hay contratos que venzan en los próximos 30 días.</div>
       {% endif %}
     </div>
 
@@ -483,15 +604,17 @@ th{
     <div class="card">
       <div class="card-title">
         <h2>Vencimientos por mes</h2>
-        <span class="small">Distribución de fin de contrato</span>
+        <span class="small">Fin de contrato agrupado</span>
       </div>
 
-      <canvas id="vencimientosChart" height="170"></canvas>
+      <div class="chart-wrap">
+        <canvas id="vencimientosChart"></canvas>
+      </div>
 
       {% if not grafico_labels or grafico_labels|length == 0 %}
-        <div class="sub" style="margin-top:10px;">Aún no hay datos suficientes para el gráfico.</div>
+        <div class="empty" style="margin-top:10px;">Aún no hay datos suficientes para el gráfico.</div>
       {% else %}
-        <div class="small" style="margin-top:10px;">Útil para ver acumulaciones de renovaciones en ciertos meses.</div>
+        <div class="small" style="margin-top:10px;">Útil para detectar acumulaciones de renovaciones.</div>
       {% endif %}
     </div>
   </div>
@@ -499,25 +622,25 @@ th{
   <!-- Buscador -->
   <div class="card">
     <div class="card-title">
-      <h2>Buscar contratos</h2>
+      <h2>CONSULTA INTELIGENTE</h2>
       <span class="small">Consulta rápida</span>
     </div>
     <div class="sub">Ejemplos: “vencen en 15 días”, “laborales”, “sin fecha”.</div>
-    <form action="/preguntar_contratos/" method="post" style="margin-top:12px; display:flex; gap:10px; align-items:center;">
-      <input name="pregunta" placeholder="Ej: vencen en 15 días">
+    <form action="/preguntar_contratos/" method="post" style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <input name="pregunta" placeholder="Ej: vencen en 15 días" style="flex: 1; min-width: 240px;">
       <button class="btn" type="submit">Preguntar</button>
     </form>
   </div>
 
-  <!-- Gestión documental -->
+  <!-- REPOSITORIO CONTRACTUAL -->
   <div class="card">
     <div class="card-title">
-      <h2>Gestión documental</h2>
+      <h2>REPOSITORIO CONTRACTUAL</h2>
       <span class="small">Tabla completa</span>
     </div>
 
     <div class="filters">
-      <a class="filter-chip active" href="#actividad">Todos</a>
+      <a class="filter-chip {% if not tipo_actual %}active{% endif %}" href="/">Todos</a>
       <a class="filter-chip {% if tipo_actual=='laboral' %}active{% endif %}" href="/?tipo=laboral">Laboral</a>
       <a class="filter-chip {% if tipo_actual=='alquiler' %}active{% endif %}" href="/?tipo=alquiler">Alquiler</a>
       <a class="filter-chip {% if tipo_actual=='servicios' %}active{% endif %}" href="/?tipo=servicios">Servicios</a>
@@ -525,7 +648,7 @@ th{
       <a class="filter-chip {% if tipo_actual=='otro' %}active{% endif %}" href="/?tipo=otro">Otro</a>
     </div>
 
-    <div class="table-scroll">
+    <div class="table-scroll" style="margin-top: 10px;">
       <table>
         <thead>
           <tr>
@@ -545,8 +668,6 @@ th{
               <td>{{ c.tipo }}</td>
               <td>{{ c.fecha_fin or "—" }}</td>
               <td>{{ c.owner }}</td>
-
-              <!-- FIX: no comparar None con string -->
               <td>
                 {% if not c.fecha_fin %}
                   <span class="badge warn">Sin fecha</span>
@@ -558,13 +679,13 @@ th{
                   {% endif %}
                 {% endif %}
               </td>
-
-              <td>
-                <a class="btn" href="/descargar/?path={{ c.storage_path }}">Descargar</a>
+              <td style="display:flex; gap:8px; flex-wrap:wrap;">
+                <a class="btn btn-secondary" href="/descargar/?path={{ c.storage_path }}">Descargar</a>
                 {% if rol == "admin" %}
                   <form method="post" action="/admin/borrar_contrato" style="display:inline;">
                     <input type="hidden" name="contrato_id" value="{{ c.id }}">
-                    <button class="btn btn-danger" type="submit" onclick="return confirm('¿Eliminar? Se moverá a papelera.')">Eliminar</button>
+                    <button class="btn btn-danger" type="submit"
+                      onclick="return confirm('¿Eliminar? Se moverá a papelera.')">Eliminar</button>
                   </form>
                 {% endif %}
               </td>
@@ -575,7 +696,7 @@ th{
     </div>
 
     {% if todos|length == 0 %}
-      <div class="sub" style="margin-top:10px;">No hay contratos para este filtro.</div>
+      <div class="empty" style="margin-top:10px;">No hay contratos para este filtro.</div>
     {% endif %}
   </div>
 
@@ -588,28 +709,30 @@ th{
       </div>
 
       {% if miembros and miembros|length > 0 %}
-        <table>
-          <thead>
-            <tr>
-              <th>Usuario</th>
-              <th>Rol</th>
-              <th>Email alertas</th>
-              <th>Creado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for m in miembros %}
+        <div class="table-scroll" style="max-height: 320px;">
+          <table>
+            <thead>
               <tr>
-                <td><b>{{ m.username }}</b></td>
-                <td>{{ m.rol }}</td>
-                <td>{{ m.email_alertas or "—" }}</td>
-                <td>{{ (m.creado_en|string)[:10] }}</td>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Email alertas</th>
+                <th>Creado</th>
               </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {% for m in miembros %}
+                <tr>
+                  <td><b>{{ m.username }}</b></td>
+                  <td>{{ m.rol }}</td>
+                  <td>{{ m.email_alertas or "—" }}</td>
+                  <td>{{ (m.creado_en|string)[:10] }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       {% else %}
-        <div class="sub">No hay miembros registrados.</div>
+        <div class="empty">No hay miembros registrados.</div>
       {% endif %}
     </div>
   {% endif %}
@@ -633,17 +756,33 @@ th{
       datasets: [{
         label: 'Contratos',
         data: values,
-        backgroundColor: 'rgba(59,130,246,0.65)',
-        borderColor: 'rgba(59,130,246,1)',
+        backgroundColor: 'rgba(59,130,246,0.62)',
+        borderColor: 'rgba(59,130,246,0.95)',
         borderWidth: 1,
-        borderRadius: 8
+        borderRadius: 10
       }]
     },
     options: {
-      plugins: { legend: { display:false } },
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          displayColors: false,
+          callbacks: {
+            label: (ctx) => ` ${ctx.parsed.y} contratos`
+          }
+        }
+      },
       scales: {
-        y: { beginAtZero:true, ticks: { precision: 0 }, grid: { color: 'rgba(255,255,255,.06)' } },
-        x: { grid: { color: 'rgba(255,255,255,.06)' } }
+        y: {
+          beginAtZero: true,
+          ticks: { precision: 0 },
+          grid: { color: 'rgba(255,255,255,.06)' }
+        },
+        x: {
+          grid: { color: 'rgba(255,255,255,.04)' }
+        }
       }
     }
   });
