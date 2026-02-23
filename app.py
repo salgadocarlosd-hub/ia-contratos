@@ -3367,69 +3367,118 @@ def debug_job_alertas():
 
 
 @app.get("/jobs/process_outbox")
-def jobs_process_outbox(request: Request, limite: int = 50, x_job_secret: str | None = Header(default=None)):
+def jobs_process_outbox(
+    request: Request,
+    limite_empresas: int = 50,
+    limite_por_empresa: int = 50,
+    x_job_secret: str | None = Header(default=None),
+):
     """
-    Endpoint llamado por Render Cron.
-    Protegido por JOB_SECRET.
-    Usa supabase_service (no RLS) porque es un job del sistema.
-    Registra ejecución en job_runs.
+    Cron global: procesa pendientes de TODAS las empresas.
+    Protegido por OUTBOX_JOB_SECRET.
+    Registra ejecución en job_runs (schema real: job_name, status, started_at, finished_at, duration_s, metadata).
     """
     if supabase_service is None:
         raise HTTPException(status_code=500, detail="supabase_service no configurado")
 
     expected = os.getenv("OUTBOX_JOB_SECRET")
     if not expected:
-        raise HTTPException(status_code=500, detail="JOB_SECRET no configurado")
+        raise HTTPException(status_code=500, detail="OUTBOX_JOB_SECRET no configurado")
 
-    # auth: header X-Job-Secret
     if x_job_secret != expected:
         raise HTTPException(status_code=401, detail="unauthorized")
 
-    # empresa_id: puedes pasarla por query para testing, o procesar todas
-    empresa_id = request.query_params.get("empresa_id")
-    if not empresa_id:
-        raise HTTPException(status_code=400, detail="faltan params: empresa_id")
+    t0 = datetime.now(timezone.utc)
 
-    # job_runs start
+    # 1) Crear job_run (SIN empresa_id; todo va en metadata)
     run_id = None
-    try:
-        jr = supabase_service.table("job_runs").insert({
-            "empresa_id": empresa_id,
-            "job_name": "process_outbox",
-            "started_at": datetime.now(timezone.utc).isoformat(),
-            "status": "running",
-        }).execute()
-        if jr.data and len(jr.data) > 0:
-            run_id = jr.data[0].get("id")
-    except Exception:
-        # si job_runs falla, no bloqueamos el envío (pero pierdes tracking)
-        run_id = None
+    metadata = {
+        "mode": "global",
+        "limite_empresas": limite_empresas,
+        "limite_por_empresa": limite_por_empresa,
+    }
 
-    out = {"enviadas": 0, "fallidas": 0, "procesadas": 0}
+    jr = supabase_service.table("job_runs").insert({
+        "job_name": "process_outbox_global",
+        "status": "running",
+        "started_at": t0.isoformat(),
+        "metadata": metadata,
+    }).execute()
+
+    if jr.data and len(jr.data) > 0:
+        run_id = jr.data[0].get("id")
+
+    # 2) Listar empresas con pending elegibles (next_retry_at ok)
+    empresas_resp = supabase_service.rpc(
+        "list_empresas_con_notificaciones_pendientes",
+        {"p_limit": limite_empresas}
+    ).execute()
+
+    empresas = [r["empresa_id"] for r in (empresas_resp.data or []) if r.get("empresa_id")]
+
+    total_enviadas = 0
+    total_fallidas = 0
+    total_procesadas = 0
+    resumen_por_empresa = []
     error_msg = None
 
     try:
-        out = procesar_notificaciones_pendientes(supabase_service, empresa_id, limite=limite)
-        status = "ok"
+        for empresa_id in empresas:
+            out = procesar_notificaciones_pendientes(
+                supabase_service,
+                empresa_id,
+                limite=limite_por_empresa
+            )
+
+            total_enviadas += int(out.get("enviadas", 0))
+            total_fallidas += int(out.get("fallidas", 0))
+            total_procesadas += int(out.get("procesadas", 0))
+
+            resumen_por_empresa.append({
+                "empresa_id": empresa_id,
+                "enviadas": int(out.get("enviadas", 0)),
+                "fallidas": int(out.get("fallidas", 0)),
+                "procesadas": int(out.get("procesadas", 0)),
+            })
+
+        status = "success"
+
     except Exception as e:
         status = "error"
         error_msg = str(e)[:500]
 
-    # job_runs finish
-    try:
-        if run_id:
-            supabase_service.table("job_runs").update({
-                "finished_at": datetime.now(timezone.utc).isoformat(),
-                "status": status,
-                "enviadas": out.get("enviadas", 0),
-                "fallidas": out.get("fallidas", 0),
-                "procesadas": out.get("procesadas", 0),
-                "error": error_msg,
-            }).eq("id", run_id).execute()
-    except Exception:
-        pass
+    # 3) Cerrar job_run (duration_s + metadata final)
+    t1 = datetime.now(timezone.utc)
+    duration_s = int((t1 - t0).total_seconds())
 
-    return {"ok": status == "ok", **out, "run_id": run_id}
+    final_metadata = {
+        **metadata,
+        "empresas_encontradas": len(empresas),
+        "totales": {
+            "enviadas": total_enviadas,
+            "fallidas": total_fallidas,
+            "procesadas": total_procesadas,
+        },
+        "por_empresa": resumen_por_empresa[:200],  # evita metadata gigante
+        "error": error_msg,
+    }
+
+    if run_id:
+        supabase_service.table("job_runs").update({
+            "status": status,
+            "finished_at": t1.isoformat(),
+            "duration_s": duration_s,
+            "metadata": final_metadata,
+        }).eq("id", run_id).execute()
+
+    return {
+        "ok": status == "success",
+        "run_id": run_id,
+        "empresas": len(empresas),
+        "enviadas": total_enviadas,
+        "fallidas": total_fallidas,
+        "procesadas": total_procesadas,
+    }
 
 
 from pydantic import BaseModel
